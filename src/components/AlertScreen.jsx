@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { 
   AlertTriangle, 
-  ShieldAlert, 
   PhoneCall, 
   MapPin, 
   CheckCircle2, 
@@ -12,17 +11,17 @@ import {
   Copy,
   Bug,
   BrainCircuit,
-  BellRing,
-  Info
+  BellRing
 } from 'lucide-react';
 
 export default function AlertScreen({ alertData, contacts = [], primaryContact, onResetJourney }) {
   const [copiedLocation, setCopiedLocation] = useState(false);
 
+  // Confidence Tier Threshold: >= 75% triggers High Urgent Emergency (All contacts); < 75% triggers Medium Advisory Check-In (Primary contact only)
   const confidence = alertData?.confidence ?? 0.95;
   const isHighUrgency = confidence >= 0.75 || alertData?.urgencyLevel === 'HIGH';
 
-  // Smart Contact Filter: Medium Confidence notifies ONLY Primary Contact; High Confidence notifies ALL
+  // Smart Contact Filtering: Medium Confidence notifies ONLY Primary Contact; High Confidence notifies ALL Contacts
   const notifiedContacts = isHighUrgency
     ? (contacts.length > 0 ? contacts : [primaryContact].filter(Boolean))
     : [primaryContact || contacts[0]].filter(Boolean);

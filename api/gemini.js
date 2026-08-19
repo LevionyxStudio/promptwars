@@ -63,6 +63,7 @@ Generate a brief, warm, natural check-in message (1 to 2 sentences max) asking i
     if (action === 'classify') {
       const { userResponse = '', promptText = '' } = payload || {};
 
+      // Phase 2 Prompt: Evaluates deep psychological/behavioral signals beyond keyword matching
       const systemInstruction = `You are a specialized behavioral & crisis sentiment analyzer for personal safety monitoring during late-night walks.
 Analyze the user's response to a safety check-in prompt.
 Reason deeply about genuine behavioral and psychological signals — do NOT rely solely on simple keyword matching.

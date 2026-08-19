@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  ShieldAlert, 
   CheckCircle2, 
   Send, 
   Sparkles, 
@@ -9,9 +8,7 @@ import {
   Footprints, 
   MapPin, 
   Bot, 
-  UserCheck, 
-  Loader2,
-  AlertTriangle
+  Loader2
 } from 'lucide-react';
 import { generateCheckInPrompt, classifyUserResponse } from '../services/gemini.js';
 import { getDeviceLocation } from '../services/location.js';
@@ -101,7 +98,7 @@ export default function ActiveJourney({
     setIsGeneratingPrompt(false);
   };
 
-  // Handle User Response Submission
+  // Handle User Response Submission & Behavioral Analysis
   const handleResponseSubmit = async (textToSubmit = userResponseText) => {
     if (isClassifying) return;
     clearInterval(timeoutTimerRef.current);
@@ -131,7 +128,7 @@ export default function ActiveJourney({
     }
   };
 
-  // Timeout distress handler
+  // Timeout distress handler (automatic 100% confidence emergency)
   const handleTimeoutDistress = async () => {
     setIsClassifying(true);
     const classification = await classifyUserResponse({
