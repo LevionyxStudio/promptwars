@@ -44,41 +44,11 @@ export default function App() {
     }
 
     const unsubscribe = subscribeUserContacts(user.uid, (cloudContacts) => {
-      if (cloudContacts.length === 0) {
-        seedDefaultCloudContacts(user.uid);
-      } else {
-        setContacts(cloudContacts);
-      }
+      setContacts(cloudContacts);
     });
 
     return () => unsubscribe();
   }, [user]);
-
-  // Seed default initial contacts in Firestore for new users
-  const seedDefaultCloudContacts = async (uid) => {
-    const initial = [
-      {
-        id: 'contact_default_1',
-        name: 'Alex Smith',
-        phone: '+91 9876543210',
-        email: 'alex@example.com',
-        relationship: 'Partner / Spouse',
-        isPrimary: true
-      },
-      {
-        id: 'contact_default_2',
-        name: 'Priya Sharma',
-        phone: '+91 9812345678',
-        email: 'priya@example.com',
-        relationship: 'Friend / Family',
-        isPrimary: false
-      }
-    ];
-
-    for (const c of initial) {
-      await addContactToCloud(uid, c);
-    }
-  };
 
   const handleAddContact = async (newContact) => {
     if (user) {
