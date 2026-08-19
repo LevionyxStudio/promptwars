@@ -1,7 +1,7 @@
 /**
  * Guardian Gemini AI Frontend Service
  * Calls the Vercel Serverless Function /api/gemini securely.
- * Includes local behavioral fallback intent heuristics if the endpoint is unavailable.
+ * Includes local behavioral fallback intent heuristics if the endpoint is unavailable or times out.
  */
 
 /**
@@ -13,15 +13,20 @@ export const generateCheckInPrompt = async ({
   elapsedSeconds = 30, 
   locationName = 'en route' 
 }) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8-second hung request timeout
+
   try {
     const response = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         action: 'generate',
         payload: { userName, contactName, elapsedSeconds, locationName }
       })
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       return getFallbackCheckInPrompt(userName);
@@ -29,7 +34,9 @@ export const generateCheckInPrompt = async ({
 
     const data = await response.json();
     return data.promptText || getFallbackCheckInPrompt(userName);
-  } catch {
+  } catch (err) {
+    clearTimeout(timeoutId);
+    console.warn('[Guardian Gemini] API call timed out or failed. Falling back to local prompt generator.');
     return getFallbackCheckInPrompt(userName);
   }
 };
@@ -54,15 +61,20 @@ export const classifyUserResponse = async ({ userResponse = '', promptText = '' 
 
   const localClassification = evaluateLocalHeuristics(trimmed);
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8-second hung request timeout
+
   try {
     const response = await fetch('/api/gemini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
         action: 'classify',
         payload: { userResponse: trimmed, promptText }
       })
     });
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       return localClassification;
@@ -84,7 +96,9 @@ export const classifyUserResponse = async ({ userResponse = '', promptText = '' 
       confidence: Math.min(1.0, Math.max(0.0, confidence)),
       urgencyLevel: urgencyLevel
     };
-  } catch {
+  } catch (err) {
+    clearTimeout(timeoutId);
+    console.warn('[Guardian Gemini] API call timed out or failed. Falling back to local heuristic classifier.');
     return localClassification;
   }
 };

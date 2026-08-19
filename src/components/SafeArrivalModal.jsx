@@ -32,9 +32,14 @@ export default function SafeArrivalModal({ isOpen, onClose, destination }) {
           </p>
         </div>
 
-        <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-[11px] sm:text-xs text-slate-400 flex items-center justify-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>Primary contact notified of your safe arrival.</span>
+        <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-[11px] sm:text-xs text-slate-400 space-y-1">
+          <div className="flex items-center justify-center gap-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>Simulated Safe Arrival Notification Generated.</span>
+          </div>
+          <p className="text-[10px] text-slate-500 font-mono pt-0.5">
+            Note: In production, this would send via a real SMS/email API.
+          </p>
         </div>
 
         <button

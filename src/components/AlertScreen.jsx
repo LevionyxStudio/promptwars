@@ -107,10 +107,10 @@ Time: ${timestamp}`;
 
         <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-medium leading-relaxed px-2">
           {isUnresponsiveAlert
-            ? 'User has been unresponsive for 2 consecutive check-in cycles with zero response. Urgent emergency notifications have been transmitted to ALL trusted contacts.'
+            ? 'User has been unresponsive for 2 consecutive check-in cycles with zero response. Simulated emergency notifications generated for ALL trusted contacts.'
             : isHighUrgency
-              ? 'Guardian AI detected high-confidence distress signals. Urgent emergency notifications have been dispatched to ALL trusted contacts.'
-              : 'Guardian AI detected subtle behavioral hesitation. Non-panic advisory check-in dispatched to your primary contact only.'}
+              ? 'Guardian AI detected high-confidence distress signals. Simulated emergency notifications generated for ALL trusted contacts.'
+              : 'Guardian AI detected subtle behavioral hesitation. Simulated non-panic advisory check-in generated for primary contact only.'}
         </p>
       </div>
 
@@ -130,17 +130,22 @@ Time: ${timestamp}`;
           </div>
 
           <div className="space-y-3">
-            {/* Urgency Tier & Confidence Bar */}
+            {/* Fix 3: Dynamic Urgency Tier & Real Calculated Confidence Percentage */}
             <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-400 font-medium">Alert Urgency Level:</span>
-                <span className="font-mono font-extrabold text-rose-400">
-                  100% (CRITICAL EMERGENCY)
+                <span className="text-slate-400 font-medium">AI Confidence Score:</span>
+                <span className={`font-mono font-extrabold ${isHighUrgency ? 'text-rose-400' : 'text-amber-400'}`}>
+                  {Math.round(confidence * 100)}% ({isUnresponsiveAlert ? 'CRITICAL UNRESPONSIVE' : isHighUrgency ? 'HIGH TIER' : 'MEDIUM TIER'})
                 </span>
               </div>
               <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
                 <div 
-                  className="h-full rounded-full bg-gradient-to-r from-amber-500 via-rose-500 to-red-600 w-full animate-pulse"
+                  className={`h-full rounded-full transition-all duration-1000 ${
+                    isHighUrgency 
+                      ? 'bg-gradient-to-r from-amber-500 via-rose-500 to-red-600' 
+                      : 'bg-gradient-to-r from-teal-500 to-amber-400'
+                  }`}
+                  style={{ width: `${Math.round(confidence * 100)}%` }}
                 ></div>
               </div>
             </div>
@@ -237,7 +242,11 @@ Time: ${timestamp}`;
             </h3>
           </div>
           <span className="text-[11px] font-mono font-semibold text-rose-300 bg-rose-500/10 px-2.5 py-1 rounded border border-rose-500/20">
-            {isUnresponsiveAlert ? `UNRESPONSIVE EMERGENCY: ALL ${notifiedContacts.length} CONTACTS DISPATCHED` : `HIGH URGENCY: ALL ${notifiedContacts.length} CONTACTS DISPATCHED`}
+            {isUnresponsiveAlert 
+              ? `UNRESPONSIVE EMERGENCY: ALL ${notifiedContacts.length} CONTACTS DISPATCHED` 
+              : isHighUrgency
+                ? `HIGH URGENCY: ALL ${notifiedContacts.length} CONTACTS DISPATCHED`
+                : `MEDIUM URGENCY: PRIMARY ONLY (1/${contacts.length || 1})`}
           </span>
         </div>
 
@@ -249,19 +258,25 @@ Time: ${timestamp}`;
                 key={contact.id}
                 className={`p-3.5 rounded-xl border transition-all ${
                   isNotified
-                    ? 'bg-rose-500/10 border-rose-500/40'
+                    ? (isHighUrgency ? 'bg-rose-500/10 border-rose-500/40' : 'bg-amber-500/10 border-amber-500/40')
                     : 'bg-slate-950/40 border-slate-800 opacity-60'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <span className="text-xs font-bold text-white truncate">{contact.name}</span>
-                  <span className="text-[9px] font-bold font-mono px-2 py-0.5 rounded border shrink-0 bg-rose-500/20 text-rose-300 border-rose-500/40">
-                    URGENT DISPATCH
+                  <span className={`text-[9px] font-bold font-mono px-2 py-0.5 rounded border shrink-0 ${
+                    isNotified
+                      ? (isHighUrgency ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40')
+                      : 'bg-slate-800 text-slate-400 border-slate-700'
+                  }`}>
+                    {isNotified ? (isHighUrgency ? 'URGENT DISPATCH' : 'ADVISORY CHECK-IN') : 'STANDBY'}
                   </span>
                 </div>
                 <p className="text-[11px] font-mono text-slate-400 truncate">{contact.phone || contact.email}</p>
                 <p className="text-[10px] text-slate-500 mt-1 italic">
-                  Full emergency SMS transmitted
+                  {isNotified
+                    ? (isHighUrgency ? 'Simulated emergency SMS preview generated' : 'Simulated advisory SMS preview generated')
+                    : 'Standby mode (not notified at medium confidence)'}
                 </p>
               </div>
             );
@@ -269,13 +284,13 @@ Time: ${timestamp}`;
         </div>
       </div>
 
-      {/* Simulated Trusted Contact Phone Screen Preview Cards */}
+      {/* Fix 2: Simulated Trusted Contact Phone Screen Preview Cards (Honest Wording) */}
       <div className="glass-panel p-4 sm:p-6 border-slate-800 bg-slate-900/95 space-y-4">
         <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-2">
           <div className="flex items-center gap-2 text-slate-200">
             <MessageSquare className="w-5 h-5 text-emerald-400" />
             <h3 className="text-sm sm:text-base font-bold text-white font-heading">
-              Simulated Emergency SMS Dispatch Previews
+              Simulated Emergency SMS Previews
             </h3>
           </div>
           <span className="text-[10px] sm:text-xs text-slate-400 font-mono">{timestamp}</span>
@@ -285,20 +300,30 @@ Time: ${timestamp}`;
           {notifiedContacts.map((contact) => (
             <div 
               key={contact.id}
-              className="p-3.5 sm:p-4 rounded-2xl bg-slate-950 border border-rose-500/30 text-rose-200 font-mono text-[11px] sm:text-xs space-y-2 leading-relaxed break-words"
+              className={`p-3.5 sm:p-4 rounded-2xl bg-slate-950 border font-mono text-[11px] sm:text-xs space-y-2 leading-relaxed break-words ${
+                isHighUrgency ? 'border-rose-500/30 text-rose-200' : 'border-amber-500/30 text-amber-200'
+              }`}
             >
-              <div className="flex flex-wrap items-center justify-between border-b border-rose-500/20 pb-1.5 font-sans font-bold gap-1">
+              <div className="flex flex-wrap items-center justify-between border-b pb-1.5 font-sans font-bold gap-1"
+                style={{ borderColor: isHighUrgency ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)' }}>
                 <span className="flex items-center gap-1 truncate max-w-[220px] sm:max-w-none">
                   <User className="w-3.5 h-3.5 shrink-0" /> TO: {contact.name} ({contact.phone || contact.email})
                 </span>
-                <span className="text-[9px] px-1.5 py-0.5 rounded shrink-0 font-mono uppercase bg-rose-500/20 text-rose-300">
-                  DELIVERED (UNRESPONSIVE EMERGENCY)
+                <span className="text-[9px] px-1.5 py-0.5 rounded shrink-0 font-mono uppercase"
+                  style={{
+                    backgroundColor: isHighUrgency ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)',
+                    color: isHighUrgency ? '#fca5a5' : '#fcd34d'
+                  }}>
+                  SIMULATED PREVIEW
                 </span>
               </div>
               <p className="whitespace-pre-wrap leading-relaxed">{getSmsMessageForContact(contact)}</p>
             </div>
           ))}
         </div>
+        <p className="text-[10px] text-slate-500 font-mono text-center pt-1">
+          Note: In production, this would send via a real SMS/email API (e.g. Twilio / Resend).
+        </p>
       </div>
 
       {/* Emergency Action Buttons */}

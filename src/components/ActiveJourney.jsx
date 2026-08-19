@@ -37,6 +37,8 @@ export default function ActiveJourney({
 
   // Phase 3: Track consecutive missed check-ins across the journey
   const [consecutiveMissedCheckins, setConsecutiveMissedCheckins] = useState(0);
+  // Cycle key to force response timeout timer effect to restart on follow-up check-ins
+  const [timeoutCycleKey, setTimeoutCycleKey] = useState(0);
 
   const safeWord = journeyData?.safeWord || 'pineapple';
 
@@ -70,7 +72,7 @@ export default function ActiveJourney({
     return () => clearInterval(mainTimerRef.current);
   }, [isCheckInPending]);
 
-  // Response Timeout Timer (15s limit once check-in prompt opens)
+  // Response Timeout Timer (15s limit once check-in prompt opens, restarts on timeoutCycleKey change)
   useEffect(() => {
     if (!isCheckInPending || isClassifying) return;
 
@@ -86,7 +88,7 @@ export default function ActiveJourney({
     }, 1000);
 
     return () => clearInterval(timeoutTimerRef.current);
-  }, [isCheckInPending, isClassifying]);
+  }, [isCheckInPending, isClassifying, timeoutCycleKey]);
 
   // Trigger Check-in Prompter
   const triggerCheckInModal = async () => {
@@ -149,7 +151,7 @@ export default function ActiveJourney({
     }
   };
 
-  // Phase 3: Consecutive Missed Check-In Handler (Sustained Unresponsiveness)
+  // Phase 3 Fix 1: Consecutive Missed Check-In Handler with timeoutCycleKey restart
   const handleTimeoutDistress = async () => {
     const newMissedCount = consecutiveMissedCheckins + 1;
     setConsecutiveMissedCheckins(newMissedCount);
@@ -166,9 +168,9 @@ export default function ActiveJourney({
         location: currentLocation
       });
     } else {
-      // First missed check-in -> Prompt immediate follow-up check-in & keep response timeout active
-      setIsCheckInPending(true);
+      // First missed check-in -> Prompt follow-up check-in & restart timeout timer via timeoutCycleKey
       setResponseTimeoutLeft(RESPONSE_TIMEOUT);
+      setTimeoutCycleKey((prev) => prev + 1);
       setCheckInPromptText(`⚠️ URGENT FOLLOW-UP (Check-in 1/2 missed): Are you okay? Please confirm your safety or enter your safe word.`);
     }
   };
