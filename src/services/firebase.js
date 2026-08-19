@@ -15,14 +15,15 @@ import {
   onSnapshot 
 } from "firebase/firestore";
 
+// Read Firebase Web App configuration from Vite Environment Variables (.env)
 const firebaseConfig = {
-  apiKey: "AIzaSyBWRQA9GPvVOhNVK0HPlB6bvdq_yfW6EeE",
-  authDomain: "guardianai-273f2.firebaseapp.com",
-  projectId: "guardianai-273f2",
-  storageBucket: "guardianai-273f2.firebasestorage.app",
-  messagingSenderId: "1005122121302",
-  appId: "1:1005122121302:web:7871d1f5650c92e59715f7",
-  measurementId: "G-Q8BW2S7XW5"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase App, Auth, and Firestore
