@@ -5,6 +5,7 @@ import JourneySetup from './components/JourneySetup.jsx';
 import ActiveJourney from './components/ActiveJourney.jsx';
 import AlertScreen from './components/AlertScreen.jsx';
 import SafeArrivalModal from './components/SafeArrivalModal.jsx';
+import { getDeviceLocation } from './services/location.js';
 
 export default function App() {
   const [contacts, setContacts] = useState([]);
@@ -32,7 +33,7 @@ export default function App() {
       {
         id: 'contact_default_1',
         name: 'Alex Smith',
-        phone: '+1 (555) 019-2831',
+        phone: '+91 9876543210',
         email: 'alex@example.com',
         relationship: 'Partner / Spouse',
         isPrimary: true
@@ -70,10 +71,14 @@ export default function App() {
 
   const primaryContact = contacts.find((c) => c.isPrimary) || contacts[0];
 
-  const handleStartJourney = (data) => {
+  const handleStartJourney = async (data) => {
     setJourneyData(data);
     setJourneyState('ACTIVE');
     setAlertData(null);
+
+    // Prompt location immediately on user click gesture
+    const locationData = await getDeviceLocation();
+    setJourneyData((prev) => ({ ...prev, location: locationData }));
   };
 
   const handleTriggerAlert = (data) => {

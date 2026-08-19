@@ -33,15 +33,19 @@ export default function ActiveJourney({
   const [isClassifying, setIsClassifying] = useState(false);
   const [responseTimeoutLeft, setResponseTimeoutLeft] = useState(RESPONSE_TIMEOUT);
   const [lastClassification, setLastClassification] = useState(null);
-  const [currentLocation, setCurrentLocation] = useState(null);
+  const [currentLocation, setCurrentLocation] = useState(journeyData?.location || null);
 
   const mainTimerRef = useRef(null);
   const timeoutTimerRef = useRef(null);
 
-  // Fetch location on mount
+  // Sync location from journeyData or fetch on mount if missing
   useEffect(() => {
-    getDeviceLocation().then(loc => setCurrentLocation(loc));
-  }, []);
+    if (journeyData?.location) {
+      setCurrentLocation(journeyData.location);
+    } else {
+      getDeviceLocation().then(loc => setCurrentLocation(loc));
+    }
+  }, [journeyData]);
 
   // Main 30-Second Check-in Countdown Timer
   useEffect(() => {
