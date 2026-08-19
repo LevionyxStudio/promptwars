@@ -10,7 +10,8 @@ import {
   Navigation,
   ExternalLink,
   Copy,
-  Info
+  Info,
+  Bug
 } from 'lucide-react';
 
 export default function AlertScreen({ alertData, primaryContact, onResetJourney }) {
@@ -23,6 +24,7 @@ export default function AlertScreen({ alertData, primaryContact, onResetJourney 
     accuracyMeters: 25,
     isLiveGps: false,
     fallbackNote: 'Location permission denied — showing default location',
+    rawError: { code: 1, codeName: 'PERMISSION_DENIED', message: 'User denied Geolocation' },
     mapsUrl: 'https://maps.google.com/?q=28.613939,77.209021'
   };
 
@@ -120,10 +122,18 @@ Time: ${timestamp}`;
 
             {/* Clear fallback message ONLY when location.isLiveGps === false */}
             {!location.isLiveGps && (
-              <p className="text-[11px] text-amber-400/90 font-medium flex items-center gap-1.5 pt-0.5">
-                <Info className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span>{location.fallbackNote || 'Location permission denied — showing default location'}</span>
-              </p>
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 space-y-1 font-mono">
+                <div className="flex items-center gap-1.5 font-bold text-amber-400 font-sans">
+                  <Bug className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>Geolocation Diagnostics:</span>
+                </div>
+                <p className="text-[11px] leading-tight">Reason: {location.fallbackNote}</p>
+                {location.rawError && (
+                  <p className="text-[10px] text-amber-200/90 font-mono bg-slate-950/80 p-1.5 rounded border border-amber-500/20 mt-1">
+                    Raw Error Object: Code {location.rawError.code} ({location.rawError.codeName}) — "{location.rawError.message}"
+                  </p>
+                )}
+              </div>
             )}
 
             <div className="grid grid-cols-2 gap-2 pt-1">

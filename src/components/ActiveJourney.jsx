@@ -146,6 +146,22 @@ export default function ActiveJourney({
     });
   };
 
+  // Manual SOS trigger handler with location fetch
+  const handleManualSos = async () => {
+    let loc = currentLocation;
+    if (!loc || !loc.isLiveGps) {
+      loc = await getDeviceLocation();
+      setCurrentLocation(loc);
+    }
+
+    onTriggerAlert({
+      reason: 'Manual SOS Emergency Trigger activated by user',
+      userResponse: '[MANUAL SOS BUTTON PRESS]',
+      confidence: 1.0,
+      location: loc
+    });
+  };
+
   // SVG progress circle calculation
   const progressPercent = ((CHECK_IN_INTERVAL - secondsLeft) / CHECK_IN_INTERVAL) * 100;
   const strokeDashoffset = 283 - (283 * progressPercent) / 100;
@@ -363,14 +379,7 @@ export default function ActiveJourney({
       {/* Manual Emergency SOS Trigger Button */}
       <div className="pt-2">
         <button
-          onClick={() =>
-            onTriggerAlert({
-              reason: 'Manual SOS Emergency Trigger activated by user',
-              userResponse: '[MANUAL SOS BUTTON PRESS]',
-              confidence: 1.0,
-              location: currentLocation
-            })
-          }
+          onClick={handleManualSos}
           className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-sm transition-all duration-300 hover:scale-[1.01] hover:shadow-lg hover:shadow-rose-500/10 active:scale-[0.99]"
         >
           <AlertOctagon className="w-5 h-5 text-rose-500 animate-pulse" />
