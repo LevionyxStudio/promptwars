@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Footprints, Shield, ArrowRight, MapPin, Clock } from 'lucide-react';
+import { Footprints, Shield, ArrowRight, MapPin, Clock, Key } from 'lucide-react';
 
 export default function JourneySetup({ onStartJourney, primaryContact }) {
   const [destination, setDestination] = useState('');
   const [journeyNote, setJourneyNote] = useState('');
+  const [safeWord, setSafeWord] = useState('pineapple');
   const [submitted, setSubmitted] = useState(false);
   const [destinationTouched, setDestinationTouched] = useState(false);
   const [noteTouched, setNoteTouched] = useState(false);
@@ -18,7 +19,8 @@ export default function JourneySetup({ onStartJourney, primaryContact }) {
     if (!isFormValid) return;
     onStartJourney({ 
       destination: destination.trim(), 
-      journeyNote: journeyNote.trim() 
+      journeyNote: journeyNote.trim(),
+      safeWord: safeWord.trim() || 'pineapple'
     });
   };
 
@@ -39,7 +41,7 @@ export default function JourneySetup({ onStartJourney, primaryContact }) {
           </span>
         </h2>
         <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto leading-relaxed px-2">
-          Guardian monitors your journey autonomously. If you don't respond safely to check-ins, your trusted contact gets immediate emergency dispatches.
+          Guardian monitors your journey autonomously. If you miss 2 consecutive check-ins or express distress, your trusted contacts get immediate emergency dispatches.
         </p>
       </div>
 
@@ -97,6 +99,26 @@ export default function JourneySetup({ onStartJourney, primaryContact }) {
               </p>
             )}
           </div>
+        </div>
+
+        {/* Phase 3 Accessibility: Safe Word Setting */}
+        <div>
+          <label className="block text-xs font-bold text-slate-300 mb-1.5 uppercase tracking-wider">
+            Hands-Free Safe Word (Instant Safety Confirmation)
+          </label>
+          <div className="relative">
+            <Key className="absolute left-3.5 top-3 w-4 h-4 text-cyan-400" />
+            <input
+              type="text"
+              value={safeWord}
+              onChange={(e) => setSafeWord(e.target.value)}
+              placeholder="e.g. pineapple"
+              className="w-full min-h-[44px] pl-10 pr-4 py-2.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-cyan-500 text-sm text-slate-100 placeholder-slate-600 focus:outline-none font-medium transition-all"
+            />
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1">
+            Typing your custom safe word during any check-in instantly confirms your safety hands-free.
+          </p>
         </div>
 
         {/* Safety Parameters Box */}
