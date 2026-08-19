@@ -168,30 +168,30 @@ export default function ActiveJourney({
   const isApproachingZero = secondsLeft <= 5 && secondsLeft > 0;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-fadeIn transition-all duration-500">
+    <div className="max-w-2xl mx-auto space-y-5 sm:space-y-6 animate-fadeIn transition-all duration-500 px-1 sm:px-0">
       {/* Active Journey Status Header */}
-      <div className="glass-panel glass-panel-interactive p-4 sm:p-5 border-emerald-500/30 bg-slate-900/90 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-lg shadow-emerald-950/40">
-            <Footprints className="w-6 h-6 animate-bounce" />
+      <div className="glass-panel glass-panel-interactive p-4 sm:p-5 border-emerald-500/30 bg-slate-900/90 flex flex-col xs:flex-row items-start xs:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="p-2.5 sm:p-3 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-lg shadow-emerald-950/40 shrink-0">
+            <Footprints className="w-5 h-5 sm:w-6 sm:h-6 animate-bounce" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
-              <h3 className="text-base font-bold text-white font-heading">Active Safety Monitoring</h3>
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0"></span>
+              <h3 className="text-sm sm:text-base font-bold text-white font-heading truncate">Active Safety Monitoring</h3>
             </div>
-            <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-0.5">
-              <MapPin className="w-3.5 h-3.5 text-emerald-400" />
-              <span>{journeyData?.destination || 'Walking Home'}</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-slate-400">Dispatch: {primaryContact?.name}</span>
+            <p className="text-[11px] sm:text-xs text-slate-400 flex flex-wrap items-center gap-1.5 mt-0.5">
+              <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="truncate max-w-[120px] sm:max-w-none">{journeyData?.destination || 'Walking Home'}</span>
+              <span className="text-slate-600 hidden sm:inline">•</span>
+              <span className="text-slate-400 truncate max-w-[120px] sm:max-w-none">Dispatch: {primaryContact?.name}</span>
             </p>
           </div>
         </div>
 
         <button
           onClick={onSafeArrival}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition-all duration-300 hover:scale-[1.03] shadow-sm hover:shadow-emerald-500/20"
+          className="w-full xs:w-auto flex items-center justify-center gap-1.5 min-h-[44px] px-4 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition-all duration-300 shadow-sm hover:shadow-emerald-500/20 shrink-0"
         >
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>I Arrived Safely</span>
@@ -200,14 +200,14 @@ export default function ActiveJourney({
 
       {/* Main Countdown Dashboard (When not in pending check-in) */}
       {!isCheckInPending && (
-        <div className="glass-panel p-8 border-slate-800 bg-slate-900/70 text-center space-y-6 relative overflow-hidden transition-all duration-500">
+        <div className="glass-panel p-5 sm:p-8 border-slate-800 bg-slate-900/70 text-center space-y-5 sm:space-y-6 relative overflow-hidden transition-all duration-500">
           <div className="space-y-1">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Next AI Safety Check-In</span>
-            <p className="text-xs text-slate-500">Guardian will verify your safety automatically</p>
+            <span className="text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">Next AI Safety Check-In</span>
+            <p className="text-[11px] sm:text-xs text-slate-500">Guardian will verify your safety automatically</p>
           </div>
 
-          {/* Countdown Ring with Glowing Pulse near 0 */}
-          <div className="relative w-44 h-44 mx-auto flex items-center justify-center">
+          {/* Countdown Ring (Scales down proportionally on mobile viewports: w-36 h-36 sm:w-44 sm:h-44) */}
+          <div className="relative w-36 h-36 sm:w-44 sm:h-44 mx-auto flex items-center justify-center">
             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
               <circle
                 cx="50"
@@ -235,7 +235,7 @@ export default function ActiveJourney({
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span
-                className={`text-4xl font-extrabold font-mono tracking-tight transition-all duration-500 ${
+                className={`text-3xl sm:text-4xl font-extrabold font-mono tracking-tight transition-all duration-500 ${
                   isApproachingZero
                     ? 'text-amber-400 glow-text-amber animate-pulse scale-105'
                     : 'text-white glow-text-emerald'
@@ -244,7 +244,7 @@ export default function ActiveJourney({
                 00:{secondsLeft < 10 ? `0${secondsLeft}` : secondsLeft}
               </span>
               <span
-                className={`text-[10px] font-semibold uppercase tracking-widest mt-1 transition-colors duration-500 ${
+                className={`text-[9px] sm:text-[10px] font-semibold uppercase tracking-widest mt-0.5 sm:mt-1 transition-colors duration-500 ${
                   isApproachingZero ? 'text-amber-400 font-bold' : 'text-emerald-400'
                 }`}
               >
@@ -254,13 +254,13 @@ export default function ActiveJourney({
           </div>
 
           {/* Quick Manual Check-in Trigger */}
-          <div className="flex items-center justify-center gap-3 pt-2">
+          <div className="flex items-center justify-center gap-3 pt-1 sm:pt-2">
             <button
               onClick={() => {
                 setSecondsLeft(0);
                 triggerCheckInModal();
               }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-all duration-300 hover:scale-[1.03]"
+              className="flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold transition-all duration-300 active:scale-95"
             >
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               <span>Trigger Check-In Now</span>
@@ -269,8 +269,8 @@ export default function ActiveJourney({
 
           {/* Toast of last safe response */}
           {lastClassification && lastClassification.status === 'SAFE' && (
-            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 flex items-center justify-center gap-2 animate-fadeIn">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 flex items-center justify-center gap-2 animate-fadeIn leading-snug">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>Last response classified SAFE. Monitoring continues...</span>
             </div>
           )}
@@ -279,38 +279,38 @@ export default function ActiveJourney({
 
       {/* AI Check-in Prompt Modal / Card */}
       {isCheckInPending && (
-        <div className="glass-panel p-6 sm:p-8 border-amber-500/40 bg-slate-900/95 space-y-6 shadow-2xl animate-fadeIn relative">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div className="glass-panel p-4 sm:p-8 border-amber-500/40 bg-slate-900/95 space-y-5 sm:space-y-6 shadow-2xl animate-fadeIn relative">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3.5 sm:pb-4 gap-2">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/30">
+              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/30 shrink-0">
                 <Bot className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="text-base font-bold text-white font-heading">AI Safety Check-In</h4>
-                <p className="text-xs text-slate-400">Powered by Gemini AI</p>
+                <h4 className="text-sm sm:text-base font-bold text-white font-heading">AI Safety Check-In</h4>
+                <p className="text-[11px] text-slate-400">Powered by Gemini AI</p>
               </div>
             </div>
 
             {/* Response Timeout Indicator */}
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-mono font-bold animate-pulse">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-mono font-bold animate-pulse shrink-0">
               <Clock className="w-3.5 h-3.5 animate-spin" />
               <span>{responseTimeoutLeft}s Timeout</span>
             </div>
           </div>
 
           {/* AI Question Box */}
-          <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2 shadow-inner">
+          <div className="p-3.5 sm:p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2 shadow-inner">
             <div className="flex items-center gap-2 text-xs font-semibold text-amber-400">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Guardian AI asks:</span>
             </div>
             {isGeneratingPrompt ? (
-              <div className="flex items-center gap-2 text-sm text-slate-400 py-2">
-                <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-400 py-2">
+                <Loader2 className="w-4 h-4 animate-spin text-amber-400 shrink-0" />
                 <span>Generating dynamic AI check-in message...</span>
               </div>
             ) : (
-              <p className="text-base text-slate-100 font-medium leading-relaxed italic">
+              <p className="text-sm sm:text-base text-slate-100 font-medium leading-relaxed italic">
                 "{checkInPromptText}"
               </p>
             )}
@@ -331,14 +331,14 @@ export default function ActiveJourney({
                     handleResponseSubmit();
                   }
                 }}
-                placeholder="e.g. All good, just turning the corner onto my street"
-                className="w-full pl-4 pr-12 py-3 rounded-xl bg-slate-950 border border-slate-700 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-400 font-medium transition-all"
+                placeholder="e.g. All good, just turning the corner"
+                className="w-full min-h-[48px] pl-3.5 pr-12 py-3 rounded-xl bg-slate-950 border border-slate-700 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-400 font-medium transition-all"
                 disabled={isClassifying}
               />
               <button
                 onClick={() => handleResponseSubmit()}
                 disabled={!userResponseText.trim() || isClassifying}
-                className="absolute right-2 top-2 p-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 disabled:opacity-40 transition-all hover:scale-105 active:scale-95"
+                className="absolute right-2 top-2 p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 disabled:opacity-40 transition-all active:scale-95"
               >
                 {isClassifying ? (
                   <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
@@ -353,21 +353,21 @@ export default function ActiveJourney({
               <button
                 onClick={() => handleResponseSubmit("I'm safe, almost home!")}
                 disabled={isClassifying}
-                className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition-all hover:scale-[1.02]"
+                className="min-h-[40px] px-3 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition-all active:scale-95 text-left"
               >
                 👍 "I'm safe, almost home!"
               </button>
               <button
                 onClick={() => handleResponseSubmit("All good, just walking")}
                 disabled={isClassifying}
-                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold transition-all hover:scale-[1.02]"
+                className="min-h-[40px] px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold transition-all active:scale-95 text-left"
               >
                 👌 "All good, just walking"
               </button>
               <button
                 onClick={() => handleResponseSubmit("Someone is following me, I feel unsafe")}
                 disabled={isClassifying}
-                className="px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-semibold transition-all hover:scale-[1.02]"
+                className="min-h-[40px] px-3 py-2 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-semibold transition-all active:scale-95 text-left"
               >
                 ⚠️ "Someone is following me!" (Test Distress)
               </button>
@@ -377,12 +377,12 @@ export default function ActiveJourney({
       )}
 
       {/* Manual Emergency SOS Trigger Button */}
-      <div className="pt-2">
+      <div className="pt-1 sm:pt-2">
         <button
           onClick={handleManualSos}
-          className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-sm transition-all duration-300 hover:scale-[1.01] hover:shadow-lg hover:shadow-rose-500/10 active:scale-[0.99]"
+          className="w-full min-h-[48px] flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold text-xs sm:text-sm transition-all duration-300 active:scale-[0.98]"
         >
-          <AlertOctagon className="w-5 h-5 text-rose-500 animate-pulse" />
+          <AlertOctagon className="w-5 h-5 text-rose-500 animate-pulse shrink-0" />
           <span>Manual Emergency SOS Trigger</span>
         </button>
       </div>

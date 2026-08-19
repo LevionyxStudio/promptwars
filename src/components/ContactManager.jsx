@@ -61,15 +61,15 @@ export default function ContactManager({ contacts, onAddContact, onDeleteContact
   const showEmailError = (submitted || emailTouched) && !isEmailValid;
 
   return (
-    <div className="glass-panel p-5 sm:p-6 border border-slate-800 bg-slate-900/60 rounded-2xl">
-      <div className="flex items-center justify-between gap-4 mb-4">
+    <div className="glass-panel p-4 sm:p-6 border border-slate-800 bg-slate-900/60 rounded-2xl">
+      <div className="flex items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
             <HeartHandshake className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-white">Trusted Contacts</h3>
-            <p className="text-xs text-slate-400">Notified instantly if distress is detected</p>
+            <h3 className="text-sm sm:text-base font-bold text-white leading-tight">Trusted Contacts</h3>
+            <p className="text-[11px] sm:text-xs text-slate-400">Notified instantly if distress is detected</p>
           </div>
         </div>
 
@@ -78,7 +78,7 @@ export default function ContactManager({ contacts, onAddContact, onDeleteContact
             setShowAddForm(!showAddForm);
             setSubmitted(false);
           }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition-all"
+          className="flex items-center gap-1.5 min-h-[38px] sm:min-h-[44px] px-3 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition-all shrink-0"
         >
           <UserPlus className="w-4 h-4" />
           <span>{showAddForm ? 'Close' : 'Add Contact'}</span>
@@ -87,7 +87,7 @@ export default function ContactManager({ contacts, onAddContact, onDeleteContact
 
       {/* Add Contact Form */}
       {showAddForm && (
-        <form onSubmit={handleSubmit} noValidate className="mb-5 p-4 rounded-xl bg-slate-950/80 border border-emerald-500/30 space-y-3.5 animate-fadeIn">
+        <form onSubmit={handleSubmit} noValidate className="mb-5 p-3.5 sm:p-4 rounded-xl bg-slate-950/80 border border-emerald-500/30 space-y-3.5 animate-fadeIn">
           <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider">New Safety Contact</h4>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -99,7 +99,7 @@ export default function ContactManager({ contacts, onAddContact, onDeleteContact
                 value={name}
                 onBlur={() => setNameTouched(true)}
                 onChange={(e) => setName(e.target.value)}
-                className={`w-full px-3 py-2 rounded-lg bg-slate-900 text-sm text-slate-100 placeholder-slate-600 focus:outline-none transition-all ${
+                className={`w-full min-h-[44px] px-3 py-2 rounded-lg bg-slate-900 text-sm text-slate-100 placeholder-slate-600 focus:outline-none transition-all ${
                   showNameError
                     ? 'border-2 border-rose-500 focus:border-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.3)]'
                     : 'border border-slate-700 focus:border-emerald-500'
@@ -122,13 +122,13 @@ export default function ContactManager({ contacts, onAddContact, onDeleteContact
                   maxLength={10}
                   onBlur={() => setPhoneTouched(true)}
                   onChange={handlePhoneChange}
-                  className={`w-full px-3 py-2 rounded-lg bg-slate-900 text-sm text-slate-100 placeholder-slate-600 focus:outline-none font-mono transition-all ${
+                  className={`w-full min-h-[44px] px-3 py-2 rounded-lg bg-slate-900 text-sm text-slate-100 placeholder-slate-600 focus:outline-none font-mono transition-all ${
                     showPhoneError
                       ? 'border-2 border-rose-500 focus:border-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.3)]'
                       : 'border border-slate-700 focus:border-emerald-500'
                   }`}
                 />
-                <span className="absolute right-2.5 top-2.5 text-[10px] font-mono text-slate-500">
+                <span className="absolute right-2.5 top-3 text-[10px] font-mono text-slate-500">
                   {phone.length}/10
                 </span>
               </div>
@@ -147,7 +147,7 @@ export default function ContactManager({ contacts, onAddContact, onDeleteContact
                 value={email}
                 onBlur={() => setEmailTouched(true)}
                 onChange={(e) => setEmail(e.target.value)}
-                className={`w-full px-3 py-2 rounded-lg bg-slate-900 text-sm text-slate-100 placeholder-slate-600 focus:outline-none transition-all ${
+                className={`w-full min-h-[44px] px-3 py-2 rounded-lg bg-slate-900 text-sm text-slate-100 placeholder-slate-600 focus:outline-none transition-all ${
                   showEmailError
                     ? 'border-2 border-rose-500 focus:border-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.3)]'
                     : 'border border-slate-700 focus:border-emerald-500'
@@ -165,7 +165,7 @@ export default function ContactManager({ contacts, onAddContact, onDeleteContact
               <select
                 value={relationship}
                 onChange={(e) => setRelationship(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
+                className="w-full min-h-[44px] px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-sm text-slate-100 focus:outline-none focus:border-emerald-500"
               >
                 <option value="Friend / Family">Friend / Family</option>
                 <option value="Partner / Spouse">Partner / Spouse</option>
@@ -182,13 +182,13 @@ export default function ContactManager({ contacts, onAddContact, onDeleteContact
                 setShowAddForm(false);
                 setSubmitted(false);
               }}
-              className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+              className="min-h-[40px] px-3 py-1.5 text-xs text-slate-400 hover:text-white"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-4 py-1.5 text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-lg transition-all"
+              className="min-h-[44px] px-4 py-2 text-xs font-bold text-slate-950 bg-emerald-400 hover:bg-emerald-300 rounded-lg transition-all"
             >
               Save Contact
             </button>
@@ -215,9 +215,9 @@ export default function ContactManager({ contacts, onAddContact, onDeleteContact
                   : 'bg-slate-950/40 border-slate-800/80 hover:border-slate-700'
               }`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm ${
+                  className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${
                     contact.isPrimary
                       ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                       : 'bg-slate-800 text-slate-300 border border-slate-700'
@@ -225,24 +225,24 @@ export default function ContactManager({ contacts, onAddContact, onDeleteContact
                 >
                   {contact.name.charAt(0).toUpperCase()}
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-white">{contact.name}</span>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-sm font-semibold text-white truncate">{contact.name}</span>
                     {contact.isPrimary && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <CheckCircle2 className="w-3 h-3" /> PRIMARY DISPATCH
+                      <span className="inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                        <CheckCircle2 className="w-2.5 h-2.5" /> PRIMARY DISPATCH
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3 text-xs text-slate-400 mt-0.5 font-mono">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400 mt-0.5 font-mono">
                     {contact.phone && (
-                      <span className="flex items-center gap-1">
-                        <Phone className="w-3 h-3 text-slate-500" /> {contact.phone}
+                      <span className="flex items-center gap-1 truncate">
+                        <Phone className="w-3 h-3 text-slate-500 shrink-0" /> {contact.phone}
                       </span>
                     )}
                     {contact.email && (
-                      <span className="flex items-center gap-1">
-                        <Mail className="w-3 h-3 text-slate-500" /> {contact.email}
+                      <span className="flex items-center gap-1 truncate max-w-[180px] sm:max-w-none">
+                        <Mail className="w-3 h-3 text-slate-500 shrink-0" /> {contact.email}
                       </span>
                     )}
                   </div>
@@ -255,7 +255,7 @@ export default function ContactManager({ contacts, onAddContact, onDeleteContact
                     e.stopPropagation();
                     onDeleteContact(contact.id);
                   }}
-                  className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
+                  className="opacity-100 sm:opacity-0 group-hover:opacity-100 p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all shrink-0 ml-2"
                   title="Remove Contact"
                 >
                   <Trash2 className="w-4 h-4" />
