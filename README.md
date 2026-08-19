@@ -1,35 +1,48 @@
 # Guardian — AI Personal Safety Net 🛡️
 
-**SafetyNet Challenge — Hackathon Phase 1 & Phase 2**
+**SafetyNet Challenge — Personal Safety Companion**
 
-Guardian is an autonomous, AI-powered personal safety check-in application built for individuals walking home alone or commuting late at night. It provides continuous, intelligent monitoring without requiring manual phone calls.
+Guardian is an autonomous, AI-powered personal safety check-in application built for individuals walking home alone or commuting late at night. It provides continuous, intelligent monitoring, behavioral distress detection, sustained unresponsiveness tracking, and instant cloud-synced emergency notifications without requiring manual phone calls.
 
 ---
 
-## 🌟 How It Works & The Role of AI
+## 🌟 Key Features & AI Capabilities
 
-1. **Journey Initialization**: The commuter starts their walk with a single tap (**"I'm Walking Home"**).
-2. **Autonomous AI Check-In**: Every 30 seconds (configurable demo interval), **Google Gemini AI** generates a dynamic, context-aware, empathetic check-in question (e.g. *"Hey Naman, just checking in — are you near 5th Ave yet? Everything okay?"*).
-3. **Phase 2 Deeper Behavioral Distress Reasoning**:
-   - Instead of simple keyword matching, **Gemini 2.5 Flash / 1.5 Flash** evaluates deep psychological and behavioral distress signals:
-     - **Unusual Brevity**: Single-word / minimal answers under pressure (e.g. `"fine"`, `"k"`, `"."`).
+1. **Google Sign-In & Cloud Firestore Sync**:
+   - Universal Google Sign-In authentication (`firebase/auth`).
+   - Real-time cloud sync for trusted contacts stored under `users/{uid}/contacts` using Cloud Firestore.
+
+2. **Autonomous AI Safety Check-Ins**:
+   - Every 30 seconds (configurable demo interval), **Google Gemini AI** generates dynamic, context-aware check-in questions tailored to the commuter's journey.
+
+3. **Behavioral Distress Sentiment Analysis**:
+   - **Gemini 2.5 Flash / 1.5 Flash** evaluates deep psychological and behavioral distress signals beyond simple keyword matching:
+     - **Unusual Brevity**: Single-character or minimal answers under pressure (e.g. `"fine"`, `"k"`, `"."`).
      - **Forced-Calm**: Artificial, overly reassuring language (e.g. `"everything is 100% fine don't worry"`).
-     - **Hesitation & Deflection**: Non-answers avoiding safety confirmation (e.g. `"why are you asking?"`, `"who is this?"`).
-     - **Contradictions**: Combining safe words with concerning context (e.g. `"I'm fine but someone is walking close behind me"`).
-   - Returns a confidence score (`0.0` - `1.0`), assigned `urgencyLevel` (`MEDIUM` vs `HIGH`), and a short 1-2 sentence human-readable behavioral explanation.
-4. **Phase 2 Smart Alert Prioritization & Urgency Tiers**:
-   - **Medium Confidence (50-74%)**: Dispatches a **Medium Advisory Check-In** notification to the **Primary Contact ONLY** with a non-panic *"check on them"* tone.
-   - **High Confidence (75%+)**: Dispatches a **High Urgent Emergency Alert** to **ALL Trusted Contacts** with full emergency dispatch framing.
-5. **Emergency Dispatch & Geolocation**: Live GPS coordinates (`navigator.geolocation`) with interactive Google Maps links and simulated SMS dispatch previews.
+     - **Hesitation & Deflection**: Non-answers avoiding safety confirmation (e.g. `"why are you asking?"`).
+     - **Contradictions**: Combining safe phrases with concerning context.
+   - Returns a confidence score (`0.0` - `1.0`), assigned `urgencyLevel` (`MEDIUM` vs `HIGH`), and human-readable behavioral reasoning.
+
+4. **Sustained Unresponsiveness Escalation (Phase 3)**:
+   - Tracks consecutive missed check-in countdowns across the journey.
+   - If **2 consecutive check-ins are missed**, Guardian automatically triggers a critical emergency dispatch to ALL contacts with distinct unresponsiveness alert framing.
+
+5. **Hands-Free Safe Word Confirmation**:
+   - Allows setting a custom safe word (e.g. `"pineapple"`) during journey setup. Typing the safe word during any check-in instantly validates safety hands-free.
+
+6. **Smart Alert Prioritization & Emergency Dispatch**:
+   - **Medium Confidence (50-74%)**: Dispatches a non-panic advisory check-in to the **Primary Contact ONLY**.
+   - **High Confidence (75%+) / 2 Missed Check-Ins**: Dispatches an urgent emergency alert to **ALL Trusted Contacts**.
+   - Live browser GPS coordinates (`navigator.geolocation`) with Google Maps links and direct India 112 emergency dialer support.
 
 ---
 
-## 🛠️ Stack & Architecture
+## 🛠️ Tech Stack & Architecture
 
 - **Frontend**: React 18, Vite, Tailwind CSS v3, Lucide Icons, Canvas-Confetti.
-- **Serverless API Proxy**: Vercel Serverless Function (`/api/gemini.js`) protecting the API key server-side.
+- **Authentication & Cloud Database**: Firebase Auth (Google Sign-In) & Cloud Firestore (`users/{uid}/contacts`).
+- **Serverless API Proxy**: Vercel Serverless Function (`/api/gemini.js`) protecting `GEMINI_API_KEY` server-side with 8s `AbortController` timeout protection.
 - **AI Engine**: Google Gemini REST API (`gemini-2.5-flash` & `gemini-1.5-flash`) with robust offline behavioral fallback heuristics.
-- **State & Storage**: Client-side React state + `localStorage` for trusted contact persistence.
 
 ---
 
@@ -40,25 +53,27 @@ Guardian is an autonomous, AI-powered personal safety check-in application built
 npm install
 ```
 
-### 2. Configure Gemini API Key
-Create a `.env` file in the root directory:
+### 2. Configure Environment Variables
+Create a `.env` file in the root directory (see `.env.example`):
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
+
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
 ```
 
-### 3. Deploying to Vercel
-When deploying to Vercel, ensure you add `GEMINI_API_KEY` in your Vercel Project Settings:
-> **Vercel Dashboard** $\rightarrow$ **Project Settings** $\rightarrow$ **Environment Variables** $\rightarrow$ Add `GEMINI_API_KEY`.
-
-*Note: If left unconfigured, Guardian uses built-in local behavioral sentiment heuristics so the entire check-in and distress flow runs offline/demo-ready!*
-
-### 4. Launch Development Server
+### 3. Launch Development Server
 ```bash
 npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 5. Build for Production
+### 4. Build for Production
 ```bash
 npm run build
 ```

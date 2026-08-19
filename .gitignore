@@ -5,3 +5,18 @@ dist
 .env.*.local
 .DS_Store
 *.local
+
+# AI Tooling & Skill Infrastructure
+.agent/
+.agents/
+.cursor/
+.gemini/
+.gsd/
+.impeccable/
+adapters/
+scripts/
+docs/
+GSD-STYLE.md
+PROJECT_RULES.md
+model_capabilities.yaml
+skills-lock.json
