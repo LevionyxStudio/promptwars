@@ -11,10 +11,16 @@ export default function LoginScreen({ onLoginSuccess }) {
     setError(null);
     try {
       const user = await signInWithGoogle();
-      if (onLoginSuccess) onLoginSuccess(user);
+      if (user && onLoginSuccess) {
+        onLoginSuccess(user);
+      }
     } catch (err) {
-      console.error(err);
-      if (err.code !== 'auth/popup-closed-by-user') {
+      console.error('[Guardian Login] Error during Google Sign-In:', err);
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        setError('Sign-in was cancelled or closed before completing.');
+      } else if (err.code === 'auth/popup-blocked') {
+        setError('Pop-up was blocked by browser. Please allow pop-ups for this site and try again.');
+      } else {
         setError('Failed to sign in with Google. Please try again.');
       }
     } finally {

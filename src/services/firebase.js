@@ -3,8 +3,6 @@ import {
   getAuth, 
   GoogleAuthProvider, 
   signInWithPopup,
-  signInWithRedirect, 
-  getRedirectResult, 
   signOut, 
   onAuthStateChanged 
 } from "firebase/auth";
@@ -38,56 +36,16 @@ export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 /**
- * Hybrid Google Sign-In Approach:
- * - Desktop browsers: signInWithPopup (instant, reliable, no redirect loop)
- * - Mobile browsers (iOS Safari, Android Chrome): signInWithRedirect (bypasses popup blocking)
+ * Universal Google Sign-In via Popup (all devices: desktop, iOS, Android)
  */
 export const signInWithGoogle = async () => {
-  const isMobile = typeof window !== 'undefined' && (
-    window.innerWidth < 768 || 
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-  );
-
-  if (isMobile) {
-    console.log('[Guardian Auth] 📱 Mobile browser detected -> Using signInWithRedirect...');
-    try {
-      await signInWithRedirect(auth, googleProvider);
-    } catch (error) {
-      console.error("[Guardian Auth] ❌ Google Sign-In Redirect Error:", error);
-      throw error;
-    }
-  } else {
-    console.log('[Guardian Auth] 💻 Desktop browser detected -> Using signInWithPopup...');
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
-      console.log('[Guardian Auth] ✅ signInWithPopup SUCCESS! User acquired:', result.user.email);
-      return result.user;
-    } catch (error) {
-      console.error("[Guardian Auth] ❌ Google Sign-In Popup Error:", error);
-      throw error;
-    }
-  }
-};
-
-/**
- * Catch and return user auth state after redirecting back from Google (Mobile flow)
- */
-export const checkRedirectResult = async () => {
-  console.log('[Guardian Auth] 🔄 Calling getRedirectResult(auth)...');
+  console.log('[Guardian Auth] 🚀 Initiating universal signInWithPopup(auth, googleProvider)...');
   try {
-    const result = await getRedirectResult(auth);
-    if (result && result.user) {
-      console.log('[Guardian Auth] ✅ getRedirectResult SUCCESS! User acquired from redirect:', {
-        uid: result.user.uid,
-        email: result.user.email,
-        displayName: result.user.displayName
-      });
-      return result.user;
-    }
-    console.log('[Guardian Auth] ℹ️ getRedirectResult returned null (Normal page load / no pending redirect result)');
-    return null;
+    const result = await signInWithPopup(auth, googleProvider);
+    console.log('[Guardian Auth] ✅ signInWithPopup SUCCESS! User acquired:', result.user.email);
+    return result.user;
   } catch (error) {
-    console.error("[Guardian Auth] ❌ getRedirectResult Error:", error);
+    console.error("[Guardian Auth] ❌ signInWithPopup Error:", error);
     throw error;
   }
 };
@@ -107,7 +65,7 @@ export const logoutUser = async () => {
 };
 
 /**
- * Subscribe to Firebase Auth state changes
+ * Subscribe to Firebase Auth state changes (ongoing session persistence)
  */
 export const subscribeAuthState = (callback) => {
   console.log('[Guardian Auth] 📡 Registering onAuthStateChanged listener...');
