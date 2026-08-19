@@ -8,7 +8,9 @@ import {
   Footprints, 
   MapPin, 
   Bot, 
-  Loader2
+  Loader2,
+  Key,
+  AlertTriangle
 } from 'lucide-react';
 import { generateCheckInPrompt, classifyUserResponse } from '../services/gemini.js';
 import { getDeviceLocation } from '../services/location.js';
@@ -32,6 +34,11 @@ export default function ActiveJourney({
   const [responseTimeoutLeft, setResponseTimeoutLeft] = useState(RESPONSE_TIMEOUT);
   const [lastClassification, setLastClassification] = useState(null);
   const [currentLocation, setCurrentLocation] = useState(journeyData?.location || null);
+
+  // Phase 3: Track consecutive missed check-ins across the journey
+  const [consecutiveMissedCheckins, setConsecutiveMissedCheckins] = useState(0);
+
+  const safeWord = journeyData?.safeWord || 'pineapple';
 
   const mainTimerRef = useRef(null);
   const timeoutTimerRef = useRef(null);
@@ -103,6 +110,19 @@ export default function ActiveJourney({
     if (isClassifying) return;
     clearInterval(timeoutTimerRef.current);
 
+    const trimmedInput = textToSubmit.trim().toLowerCase();
+    const isSafeWordMatch = trimmedInput === safeWord.toLowerCase();
+
+    // Hands-free Safe Word instant confirmation
+    if (isSafeWordMatch) {
+      setConsecutiveMissedCheckins(0); // RESET missed counter
+      setLastClassification({ status: 'SAFE', reasoning: `Safe word '${safeWord}' verified.` });
+      setIsCheckInPending(false);
+      setUserResponseText('');
+      setSecondsLeft(CHECK_IN_INTERVAL);
+      return;
+    }
+
     setIsClassifying(true);
     const classification = await classifyUserResponse({
       userResponse: textToSubmit,
@@ -121,27 +141,47 @@ export default function ActiveJourney({
         location: currentLocation
       });
     } else {
-      // Safe response -> reset cycle
+      // Safe response -> RESET consecutive missed counter & restart cycle
+      setConsecutiveMissedCheckins(0);
       setIsCheckInPending(false);
       setUserResponseText('');
       setSecondsLeft(CHECK_IN_INTERVAL);
     }
   };
 
-  // Timeout distress handler (automatic 100% confidence emergency)
+  // Phase 3: Consecutive Missed Check-In Handler (Sustained Unresponsiveness)
   const handleTimeoutDistress = async () => {
-    setIsClassifying(true);
-    const classification = await classifyUserResponse({
-      userResponse: '',
-      promptText: checkInPromptText
-    });
-    setIsClassifying(false);
+    const newMissedCount = consecutiveMissedCheckins + 1;
+    setConsecutiveMissedCheckins(newMissedCount);
 
+    if (newMissedCount >= 2) {
+      // 2 consecutive missed check-ins -> Trigger HIGHEST urgency tier alert automatically!
+      onTriggerAlert({
+        reason: `User has been unresponsive for ${newMissedCount} consecutive check-in cycles across multiple check-ins (sustained unresponsiveness)`,
+        userResponse: `[SUSTAINED UNRESPONSIVENESS - ${newMissedCount} MISSED CHECK-INS]`,
+        confidence: 1.0,
+        urgencyLevel: 'HIGH',
+        isUnresponsiveAlert: true,
+        missedCheckinsCount: newMissedCount,
+        location: currentLocation
+      });
+    } else {
+      // First missed check-in -> Prompt immediate follow-up check-in & keep response timeout active
+      setIsCheckInPending(true);
+      setResponseTimeoutLeft(RESPONSE_TIMEOUT);
+      setCheckInPromptText(`⚠️ URGENT FOLLOW-UP (Check-in 1/2 missed): Are you okay? Please confirm your safety or enter your safe word.`);
+    }
+  };
+
+  // Preset button to simulate 2 consecutive missed check-ins
+  const handleSimulateUnresponsive = () => {
     onTriggerAlert({
-      reason: 'No response received within safety check-in countdown limit (15s timeout expired)',
-      userResponse: '[NO RESPONSE - TIMEOUT EXPIRED]',
+      reason: `User has been unresponsive for 2 consecutive check-in cycles across multiple check-ins`,
+      userResponse: `[SUSTAINED UNRESPONSIVENESS - 2 MISSED CHECK-INS]`,
       confidence: 1.0,
       urgencyLevel: 'HIGH',
+      isUnresponsiveAlert: true,
+      missedCheckinsCount: 2,
       location: currentLocation
     });
   };
@@ -185,7 +225,7 @@ export default function ActiveJourney({
               <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <span className="truncate max-w-[120px] sm:max-w-none">{journeyData?.destination || 'Walking Home'}</span>
               <span className="text-slate-600 hidden sm:inline">•</span>
-              <span className="text-slate-400 truncate max-w-[120px] sm:max-w-none">Primary: {primaryContact?.name}</span>
+              <span className="text-slate-400 truncate max-w-[120px] sm:max-w-none">Safe Word: <strong className="text-cyan-300 font-mono">{safeWord}</strong></span>
             </p>
           </div>
         </div>
@@ -198,6 +238,22 @@ export default function ActiveJourney({
           <span>I Arrived Safely</span>
         </button>
       </div>
+
+      {/* Consecutive Missed Check-In Warning Banner */}
+      {consecutiveMissedCheckins > 0 && (
+        <div className="p-3.5 rounded-2xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs flex items-center justify-between gap-3 animate-pulse">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span><strong>Warning:</strong> {consecutiveMissedCheckins}/2 missed check-ins. A 2nd missed check-in will trigger an emergency dispatch.</span>
+          </div>
+          <button
+            onClick={() => handleResponseSubmit(safeWord)}
+            className="px-2.5 py-1 rounded bg-amber-400 text-slate-950 font-bold text-[11px] hover:bg-amber-300 transition-all shrink-0"
+          >
+            Clear Counter
+          </button>
+        </div>
+      )}
 
       {/* Main Countdown Dashboard (When not in pending check-in) */}
       {!isCheckInPending && (
@@ -254,8 +310,8 @@ export default function ActiveJourney({
             </div>
           </div>
 
-          {/* Quick Manual Check-in Trigger */}
-          <div className="flex items-center justify-center gap-3 pt-1 sm:pt-2">
+          {/* Quick Manual Check-in Trigger & Safe Word */}
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-1 sm:pt-2">
             <button
               onClick={() => {
                 setSecondsLeft(0);
@@ -266,13 +322,21 @@ export default function ActiveJourney({
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               <span>Trigger Check-In Now</span>
             </button>
+
+            <button
+              onClick={() => handleResponseSubmit(safeWord)}
+              className="flex items-center gap-2 min-h-[44px] px-4 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-semibold transition-all duration-300 active:scale-95"
+            >
+              <Key className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Quick Safe Word ('{safeWord}')</span>
+            </button>
           </div>
 
           {/* Toast of last safe response */}
           {lastClassification && lastClassification.status === 'SAFE' && (
             <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 flex items-center justify-center gap-2 animate-fadeIn leading-snug">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>Last response classified SAFE. Monitoring continues...</span>
+              <span>Last response classified SAFE ({lastClassification.reasoning}). Monitoring continues...</span>
             </div>
           )}
         </div>
@@ -332,7 +396,7 @@ export default function ActiveJourney({
                     handleResponseSubmit();
                   }
                 }}
-                placeholder="e.g. All good, just turning the corner"
+                placeholder={`e.g. All good, or type '${safeWord}'`}
                 className="w-full min-h-[48px] pl-3.5 pr-12 py-3 rounded-xl bg-slate-950 border border-slate-700 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-400 font-medium transition-all"
                 disabled={isClassifying}
               />
@@ -349,10 +413,10 @@ export default function ActiveJourney({
               </button>
             </div>
 
-            {/* Quick Action Test Presets for Phase 2 Behavioral Signals */}
+            {/* Quick Action Presets (Phase 2 & Phase 3) */}
             <div className="space-y-2 pt-1">
               <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Phase 2 Behavioral Distress Presets (Click to Test):
+                Simulation Presets (Click to Test):
               </span>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -363,35 +427,26 @@ export default function ActiveJourney({
                   👍 Safe Confirmation
                 </button>
                 <button
+                  onClick={() => handleResponseSubmit(safeWord)}
+                  disabled={isClassifying}
+                  className="min-h-[38px] px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-medium transition-all active:scale-95"
+                >
+                  🔑 Safe Word ('{safeWord}')
+                </button>
+                <button
                   onClick={() => handleResponseSubmit("fine")}
                   disabled={isClassifying}
                   className="min-h-[38px] px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-medium transition-all active:scale-95"
-                  title="Tests unusual brevity under check-in pressure"
                 >
                   🔍 "fine" (Subtle Brevity)
                 </button>
                 <button
-                  onClick={() => handleResponseSubmit("why are you asking?")}
+                  onClick={handleSimulateUnresponsive}
                   disabled={isClassifying}
-                  className="min-h-[38px] px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-medium transition-all active:scale-95"
-                  title="Tests hesitation / deflection avoiding safety confirmation"
+                  className="min-h-[38px] px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-extrabold transition-all active:scale-95"
+                  title="Simulates 2 consecutive missed check-ins (Phase 3 Sustained Unresponsiveness)"
                 >
-                  🔍 "why are you asking?" (Deflection)
-                </button>
-                <button
-                  onClick={() => handleResponseSubmit("everything is totally fine do not worry")}
-                  disabled={isClassifying}
-                  className="min-h-[38px] px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-medium transition-all active:scale-95"
-                  title="Tests forced-calm / overly reassuring phrasing"
-                >
-                  🔍 "totally fine don't worry" (Forced-Calm)
-                </button>
-                <button
-                  onClick={() => handleResponseSubmit("Someone is following me, I feel unsafe!")}
-                  disabled={isClassifying}
-                  className="min-h-[38px] px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-semibold transition-all active:scale-95"
-                >
-                  🚨 "Someone is following me!" (High Threat)
+                  🚨 2 Missed Check-Ins (Unresponsive)
                 </button>
               </div>
             </div>

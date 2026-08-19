@@ -11,15 +11,18 @@ import {
   Copy,
   Bug,
   BrainCircuit,
-  BellRing
+  BellRing,
+  Clock
 } from 'lucide-react';
 
 export default function AlertScreen({ alertData, contacts = [], primaryContact, onResetJourney }) {
   const [copiedLocation, setCopiedLocation] = useState(false);
 
+  const isUnresponsiveAlert = alertData?.isUnresponsiveAlert || alertData?.missedCheckinsCount >= 2;
+
   // Confidence Tier Threshold: >= 75% triggers High Urgent Emergency (All contacts); < 75% triggers Medium Advisory Check-In (Primary contact only)
-  const confidence = alertData?.confidence ?? 0.95;
-  const isHighUrgency = confidence >= 0.75 || alertData?.urgencyLevel === 'HIGH';
+  const confidence = isUnresponsiveAlert ? 1.0 : (alertData?.confidence ?? 0.95);
+  const isHighUrgency = isUnresponsiveAlert || confidence >= 0.75 || alertData?.urgencyLevel === 'HIGH';
 
   // Smart Contact Filtering: Medium Confidence notifies ONLY Primary Contact; High Confidence notifies ALL Contacts
   const notifiedContacts = isHighUrgency
@@ -47,7 +50,13 @@ export default function AlertScreen({ alertData, contacts = [], primaryContact, 
   };
 
   const getSmsMessageForContact = (contact) => {
-    if (isHighUrgency) {
+    if (isUnresponsiveAlert) {
+      return `🚨 GUARDIAN URGENT UNRESPONSIVENESS ALERT: User has been unresponsive for 2 consecutive check-in cycles (no response received across multiple check-ins)!
+Reason: ${alertData?.reason || 'Sustained unresponsiveness detected.'}
+Location: ${location.address}
+Maps Link: ${mapsUrl}
+Time: ${timestamp}`;
+    } else if (isHighUrgency) {
       return `🚨 GUARDIAN URGENT EMERGENCY ALERT: High distress confidence (${Math.round(confidence * 100)}%)!
 User Input: "${alertData?.userResponse || '[NO RESPONSE]'}"
 AI Reasoning: ${alertData?.reason || 'Distress signal detected.'}
@@ -78,18 +87,30 @@ Time: ${timestamp}`;
           }}>
           <AlertTriangle className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${isHighUrgency ? 'animate-bounce text-rose-400' : 'text-amber-400'}`} />
           <span>
-            {isHighUrgency ? 'HIGH CONFIDENCE (75%+) — URGENT EMERGENCY DISPATCH' : 'MEDIUM CONFIDENCE (50-74%) — ADVISORY CHECK-IN DISPATCH'}
+            {isUnresponsiveAlert
+              ? 'SUSTAINED UNRESPONSIVENESS (2 MISSED CHECK-INS) — ALL-CONTACT DISPATCH'
+              : isHighUrgency
+                ? 'HIGH CONFIDENCE (75%+) — URGENT EMERGENCY DISPATCH'
+                : 'MEDIUM CONFIDENCE (50-74%) — ADVISORY CHECK-IN DISPATCH'}
           </span>
         </div>
+
         <h2 className={`text-xl sm:text-3xl font-black font-heading tracking-tight ${
           isHighUrgency ? 'text-white glow-text-crimson' : 'text-amber-300 glow-text-amber'
         }`}>
-          {isHighUrgency ? 'High Distress Emergency Alert!' : 'Advisory Safety Check-In Triggered'}
+          {isUnresponsiveAlert
+            ? 'Sustained Unresponsiveness Emergency Alert!'
+            : isHighUrgency
+              ? 'High Distress Emergency Alert!'
+              : 'Advisory Safety Check-In Triggered'}
         </h2>
+
         <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-medium leading-relaxed px-2">
-          {isHighUrgency
-            ? 'Guardian AI detected high-confidence distress signals. Urgent emergency notifications have been dispatched to ALL trusted contacts.'
-            : 'Guardian AI detected subtle behavioral hesitation. Non-panic advisory check-in dispatched to your primary contact only.'}
+          {isUnresponsiveAlert
+            ? 'User has been unresponsive for 2 consecutive check-in cycles with zero response. Urgent emergency notifications have been transmitted to ALL trusted contacts.'
+            : isHighUrgency
+              ? 'Guardian AI detected high-confidence distress signals. Urgent emergency notifications have been dispatched to ALL trusted contacts.'
+              : 'Guardian AI detected subtle behavioral hesitation. Non-panic advisory check-in dispatched to your primary contact only.'}
         </p>
       </div>
 
@@ -98,11 +119,13 @@ Time: ${timestamp}`;
         <div className="glass-panel p-4 sm:p-5 border-emerald-500/30 bg-slate-900/90 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2 text-emerald-400">
-              <BrainCircuit className="w-5 h-5 shrink-0" />
-              <h3 className="text-sm sm:text-base font-bold text-white font-heading">Behavioral AI Diagnostics</h3>
+              {isUnresponsiveAlert ? <Clock className="w-5 h-5 shrink-0 text-rose-400" /> : <BrainCircuit className="w-5 h-5 shrink-0" />}
+              <h3 className="text-sm sm:text-base font-bold text-white font-heading">
+                {isUnresponsiveAlert ? 'Unresponsiveness Sensor Diagnostics' : 'Behavioral AI Diagnostics'}
+              </h3>
             </div>
             <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
-              PHASE 2 REASONING
+              {isUnresponsiveAlert ? 'PHASE 3 UNRESPONSIVE' : 'PHASE 2 REASONING'}
             </span>
           </div>
 
@@ -110,26 +133,25 @@ Time: ${timestamp}`;
             {/* Urgency Tier & Confidence Bar */}
             <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-400 font-medium">AI Confidence Score:</span>
-                <span className={`font-mono font-extrabold ${isHighUrgency ? 'text-rose-400' : 'text-amber-400'}`}>
-                  {Math.round(confidence * 100)}% ({isHighUrgency ? 'HIGH TIER' : 'MEDIUM TIER'})
+                <span className="text-slate-400 font-medium">Alert Urgency Level:</span>
+                <span className="font-mono font-extrabold text-rose-400">
+                  100% (CRITICAL EMERGENCY)
                 </span>
               </div>
               <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
                 <div 
-                  className={`h-full rounded-full transition-all duration-1000 ${
-                    isHighUrgency ? 'bg-gradient-to-r from-amber-500 to-rose-500' : 'bg-gradient-to-r from-teal-500 to-amber-400'
-                  }`}
-                  style={{ width: `${Math.round(confidence * 100)}%` }}
+                  className="h-full rounded-full bg-gradient-to-r from-amber-500 via-rose-500 to-red-600 w-full animate-pulse"
                 ></div>
               </div>
             </div>
 
-            {/* AI Behavioral Reasoning Explanation */}
+            {/* AI Behavioral Reasoning / Unresponsiveness Explanation */}
             <div className="p-3.5 rounded-xl bg-slate-950/80 border border-emerald-500/20 space-y-1">
-              <span className="text-[10px] sm:text-[11px] font-bold text-emerald-400 uppercase tracking-wider">AI Behavioral Reasoning</span>
+              <span className="text-[10px] sm:text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+                {isUnresponsiveAlert ? 'Unresponsiveness Escalation Reason' : 'AI Behavioral Reasoning'}
+              </span>
               <p className="text-xs text-slate-200 font-medium leading-relaxed">
-                "{alertData?.reason || 'Behavioral anomaly detected'}"
+                "{alertData?.reason || 'User unresponsive for multiple check-ins'}"
               </p>
             </div>
 
@@ -214,8 +236,8 @@ Time: ${timestamp}`;
               Smart Alert Contact Prioritization
             </h3>
           </div>
-          <span className="text-[11px] font-mono font-semibold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/20">
-            {isHighUrgency ? `HIGH URGENCY: ALL ${notifiedContacts.length} CONTACTS DISPATCHED` : `MEDIUM URGENCY: PRIMARY ONLY (1/${contacts.length || 1})`}
+          <span className="text-[11px] font-mono font-semibold text-rose-300 bg-rose-500/10 px-2.5 py-1 rounded border border-rose-500/20">
+            {isUnresponsiveAlert ? `UNRESPONSIVE EMERGENCY: ALL ${notifiedContacts.length} CONTACTS DISPATCHED` : `HIGH URGENCY: ALL ${notifiedContacts.length} CONTACTS DISPATCHED`}
           </span>
         </div>
 
@@ -227,25 +249,19 @@ Time: ${timestamp}`;
                 key={contact.id}
                 className={`p-3.5 rounded-xl border transition-all ${
                   isNotified
-                    ? (isHighUrgency ? 'bg-rose-500/10 border-rose-500/40' : 'bg-amber-500/10 border-amber-500/40')
+                    ? 'bg-rose-500/10 border-rose-500/40'
                     : 'bg-slate-950/40 border-slate-800 opacity-60'
                 }`}
               >
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <span className="text-xs font-bold text-white truncate">{contact.name}</span>
-                  <span className={`text-[9px] font-bold font-mono px-2 py-0.5 rounded border shrink-0 ${
-                    isNotified
-                      ? (isHighUrgency ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40')
-                      : 'bg-slate-800 text-slate-400 border-slate-700'
-                  }`}>
-                    {isNotified ? (isHighUrgency ? 'URGENT DISPATCH' : 'ADVISORY CHECK-IN') : 'STANDBY'}
+                  <span className="text-[9px] font-bold font-mono px-2 py-0.5 rounded border shrink-0 bg-rose-500/20 text-rose-300 border-rose-500/40">
+                    URGENT DISPATCH
                   </span>
                 </div>
                 <p className="text-[11px] font-mono text-slate-400 truncate">{contact.phone || contact.email}</p>
                 <p className="text-[10px] text-slate-500 mt-1 italic">
-                  {isNotified
-                    ? (isHighUrgency ? 'Full emergency SMS transmitted' : 'Check-on-them advisory SMS transmitted')
-                    : 'Standby mode (not notified at medium confidence)'}
+                  Full emergency SMS transmitted
                 </p>
               </div>
             );
@@ -269,21 +285,14 @@ Time: ${timestamp}`;
           {notifiedContacts.map((contact) => (
             <div 
               key={contact.id}
-              className={`p-3.5 sm:p-4 rounded-2xl bg-slate-950 border font-mono text-[11px] sm:text-xs space-y-2 leading-relaxed break-words ${
-                isHighUrgency ? 'border-rose-500/30 text-rose-200' : 'border-amber-500/30 text-amber-200'
-              }`}
+              className="p-3.5 sm:p-4 rounded-2xl bg-slate-950 border border-rose-500/30 text-rose-200 font-mono text-[11px] sm:text-xs space-y-2 leading-relaxed break-words"
             >
-              <div className="flex flex-wrap items-center justify-between border-b pb-1.5 font-sans font-bold gap-1"
-                style={{ borderColor: isHighUrgency ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)' }}>
+              <div className="flex flex-wrap items-center justify-between border-b border-rose-500/20 pb-1.5 font-sans font-bold gap-1">
                 <span className="flex items-center gap-1 truncate max-w-[220px] sm:max-w-none">
                   <User className="w-3.5 h-3.5 shrink-0" /> TO: {contact.name} ({contact.phone || contact.email})
                 </span>
-                <span className="text-[9px] px-1.5 py-0.5 rounded shrink-0 font-mono uppercase"
-                  style={{
-                    backgroundColor: isHighUrgency ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)',
-                    color: isHighUrgency ? '#fca5a5' : '#fcd34d'
-                  }}>
-                  {isHighUrgency ? 'DELIVERED (URGENT)' : 'DELIVERED (ADVISORY)'}
+                <span className="text-[9px] px-1.5 py-0.5 rounded shrink-0 font-mono uppercase bg-rose-500/20 text-rose-300">
+                  DELIVERED (UNRESPONSIVE EMERGENCY)
                 </span>
               </div>
               <p className="whitespace-pre-wrap leading-relaxed">{getSmsMessageForContact(contact)}</p>
