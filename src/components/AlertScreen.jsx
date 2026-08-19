@@ -17,13 +17,13 @@ export default function AlertScreen({ alertData, primaryContact, onResetJourney 
   const [copiedLocation, setCopiedLocation] = useState(false);
 
   const location = alertData?.location || {
-    latitude: 37.774929,
-    longitude: -122.419416,
-    address: 'Market St & 5th St, San Francisco, CA',
-    accuracyMeters: 8,
+    latitude: 28.613939,
+    longitude: 77.209021,
+    address: 'Connaught Place, New Delhi, India',
+    accuracyMeters: 25,
     isLiveGps: false,
-    fallbackNote: 'Using estimated location — GPS permission required for live accuracy',
-    mapsUrl: 'https://maps.google.com/?q=37.774929,-122.419416'
+    fallbackNote: 'Location permission denied — showing default location',
+    mapsUrl: 'https://maps.google.com/?q=28.613939,77.209021'
   };
 
   const mapsUrl = location.mapsUrl || `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
@@ -102,7 +102,7 @@ Time: ${timestamp}`;
                 ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
                 : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
             }`}>
-              {location.isLiveGps ? 'GPS ACTIVE' : 'ESTIMATED LOCATION'}
+              {location.isLiveGps ? 'GPS ACTIVE' : 'DEFAULT LOCATION'}
             </span>
           </div>
 
@@ -118,11 +118,11 @@ Time: ${timestamp}`;
               </div>
             </div>
 
-            {/* Subtle note ONLY for fallback estimated location */}
+            {/* Clear fallback message ONLY when location.isLiveGps === false */}
             {!location.isLiveGps && (
               <p className="text-[11px] text-amber-400/90 font-medium flex items-center gap-1.5 pt-0.5">
                 <Info className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span>Using estimated location</span>
+                <span>{location.fallbackNote || 'Location permission denied — showing default location'}</span>
               </p>
             )}
 
@@ -175,13 +175,14 @@ Time: ${timestamp}`;
 
       {/* Emergency Action Buttons */}
       <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-        <button
-          onClick={() => alert(`SIMULATION: Calling emergency services (911) with dispatch coordinates: ${location.latitude}, ${location.longitude}`)}
+        <a
+          href="tel:112"
+          onClick={() => alert(`SIMULATION: Dialing India Unified Emergency Services (112) with dispatch coordinates: ${location.latitude}, ${location.longitude}`)}
           className="w-full sm:w-1/2 flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-sm transition-all shadow-lg shadow-rose-600/30"
         >
           <PhoneCall className="w-4 h-4" />
-          <span>Call 911 Direct</span>
-        </button>
+          <span>Call 112 Direct</span>
+        </a>
 
         <button
           onClick={onResetJourney}
