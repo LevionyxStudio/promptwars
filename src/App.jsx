@@ -1,34 +1,61 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar.jsx';
+import LoginScreen from './components/LoginScreen.jsx';
 import ContactManager from './components/ContactManager.jsx';
 import JourneySetup from './components/JourneySetup.jsx';
 import ActiveJourney from './components/ActiveJourney.jsx';
 import AlertScreen from './components/AlertScreen.jsx';
 import SafeArrivalModal from './components/SafeArrivalModal.jsx';
 import { getDeviceLocation } from './services/location.js';
+import { 
+  subscribeAuthState, 
+  logoutUser, 
+  subscribeUserContacts, 
+  addContactToCloud, 
+  deleteContactFromCloud, 
+  updatePrimaryContactInCloud 
+} from './services/firebase.js';
+import { Loader2 } from 'lucide-react';
 
 export default function App() {
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
   const [contacts, setContacts] = useState([]);
   const [journeyState, setJourneyState] = useState('IDLE'); // 'IDLE' | 'ACTIVE' | 'ALERT'
   const [journeyData, setJourneyData] = useState(null);
   const [alertData, setAlertData] = useState(null);
   const [isSafeArrivalModalOpen, setIsSafeArrivalModalOpen] = useState(false);
 
-  // Initialize Contacts from localStorage or pre-seed default contacts
+  // 1. Firebase Auth State Listener
   useEffect(() => {
-    const saved = localStorage.getItem('guardian_contacts');
-    if (saved) {
-      try {
-        setContacts(JSON.parse(saved));
-      } catch {
-        seedDefaultContacts();
-      }
-    } else {
-      seedDefaultContacts();
-    }
+    const unsubscribe = subscribeAuthState((currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
 
-  const seedDefaultContacts = () => {
+  // 2. Realtime Firestore Sync for User's Contacts (users/{uid}/contacts)
+  useEffect(() => {
+    if (!user) {
+      setContacts([]);
+      return;
+    }
+
+    const unsubscribe = subscribeUserContacts(user.uid, (cloudContacts) => {
+      if (cloudContacts.length === 0) {
+        seedDefaultCloudContacts(user.uid);
+      } else {
+        setContacts(cloudContacts);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [user]);
+
+  // Seed default initial contacts in Firestore for new users
+  const seedDefaultCloudContacts = async (uid) => {
     const initial = [
       {
         id: 'contact_default_1',
@@ -47,34 +74,35 @@ export default function App() {
         isPrimary: false
       }
     ];
-    setContacts(initial);
-    localStorage.setItem('guardian_contacts', JSON.stringify(initial));
-  };
 
-  const saveContacts = (updated) => {
-    setContacts(updated);
-    localStorage.setItem('guardian_contacts', JSON.stringify(updated));
-  };
-
-  const handleAddContact = (newContact) => {
-    const updated = [...contacts, newContact];
-    saveContacts(updated);
-  };
-
-  const handleDeleteContact = (id) => {
-    let updated = contacts.filter((c) => c.id !== id);
-    if (updated.length > 0 && !updated.some((c) => c.isPrimary)) {
-      updated[0].isPrimary = true;
+    for (const c of initial) {
+      await addContactToCloud(uid, c);
     }
-    saveContacts(updated);
   };
 
-  const handleSelectPrimaryContact = (id) => {
-    const updated = contacts.map((c) => ({
-      ...c,
-      isPrimary: c.id === id
-    }));
-    saveContacts(updated);
+  const handleAddContact = async (newContact) => {
+    if (user) {
+      await addContactToCloud(user.uid, newContact);
+    }
+  };
+
+  const handleDeleteContact = async (id) => {
+    if (user) {
+      await deleteContactFromCloud(user.uid, id);
+    }
+  };
+
+  const handleSelectPrimaryContact = async (id) => {
+    if (user) {
+      await updatePrimaryContactInCloud(user.uid, id, contacts);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await logoutUser();
+    setJourneyState('IDLE');
+    setJourneyData(null);
+    setAlertData(null);
   };
 
   const primaryContact = contacts.find((c) => c.isPrimary) || contacts[0];
@@ -111,11 +139,30 @@ export default function App() {
     setAlertData(null);
   };
 
+  // Auth Loading Screen
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
+        <div className="flex items-center gap-3 text-emerald-400 font-medium">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span>Initializing Guardian Security...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Show Login Screen if not authenticated
+  if (!user) {
+    return <LoginScreen onLoginSuccess={() => setAuthLoading(false)} />;
+  }
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-300">
       <Navbar
         journeyState={journeyState}
         contactsCount={contacts.length}
+        user={user}
+        onSignOut={handleSignOut}
       />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 lg:px-8 py-8 space-y-8">
@@ -157,7 +204,7 @@ export default function App() {
       </main>
 
       <footer className="border-t border-slate-900 py-4 px-4 text-center text-xs text-slate-500">
-        <p>Guardian SafetyNet • Built with React, Vite & Gemini AI • Phase 2 Intelligent Security</p>
+        <p>Guardian SafetyNet • Built with React, Vite & Gemini AI • Firebase Cloud Sync Active</p>
       </footer>
 
       <SafeArrivalModal
