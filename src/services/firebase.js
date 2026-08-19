@@ -2,6 +2,7 @@ import { initializeApp } from "firebase/app";
 import { 
   getAuth, 
   GoogleAuthProvider, 
+  signInWithPopup,
   signInWithRedirect, 
   getRedirectResult, 
   signOut, 
@@ -37,20 +38,39 @@ export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 /**
- * Sign in user with Google via Redirect (iOS Safari & Cross-Platform compatible)
+ * Hybrid Google Sign-In Approach:
+ * - Desktop browsers: signInWithPopup (instant, reliable, no redirect loop)
+ * - Mobile browsers (iOS Safari, Android Chrome): signInWithRedirect (bypasses popup blocking)
  */
 export const signInWithGoogle = async () => {
-  console.log('[Guardian Auth] 🚀 Initiating signInWithRedirect(auth, googleProvider)...');
-  try {
-    await signInWithRedirect(auth, googleProvider);
-  } catch (error) {
-    console.error("[Guardian Auth] ❌ Google Sign-In Redirect Error:", error);
-    throw error;
+  const isMobile = typeof window !== 'undefined' && (
+    window.innerWidth < 768 || 
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  );
+
+  if (isMobile) {
+    console.log('[Guardian Auth] 📱 Mobile browser detected -> Using signInWithRedirect...');
+    try {
+      await signInWithRedirect(auth, googleProvider);
+    } catch (error) {
+      console.error("[Guardian Auth] ❌ Google Sign-In Redirect Error:", error);
+      throw error;
+    }
+  } else {
+    console.log('[Guardian Auth] 💻 Desktop browser detected -> Using signInWithPopup...');
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      console.log('[Guardian Auth] ✅ signInWithPopup SUCCESS! User acquired:', result.user.email);
+      return result.user;
+    } catch (error) {
+      console.error("[Guardian Auth] ❌ Google Sign-In Popup Error:", error);
+      throw error;
+    }
   }
 };
 
 /**
- * Catch and return user auth state after redirecting back from Google
+ * Catch and return user auth state after redirecting back from Google (Mobile flow)
  */
 export const checkRedirectResult = async () => {
   console.log('[Guardian Auth] 🔄 Calling getRedirectResult(auth)...');
