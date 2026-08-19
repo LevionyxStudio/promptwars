@@ -40,10 +40,11 @@ googleProvider.setCustomParameters({ prompt: 'select_account' });
  * Sign in user with Google via Redirect (iOS Safari & Cross-Platform compatible)
  */
 export const signInWithGoogle = async () => {
+  console.log('[Guardian Auth] 🚀 Initiating signInWithRedirect(auth, googleProvider)...');
   try {
     await signInWithRedirect(auth, googleProvider);
   } catch (error) {
-    console.error("Google Sign-In Redirect Error:", error);
+    console.error("[Guardian Auth] ❌ Google Sign-In Redirect Error:", error);
     throw error;
   }
 };
@@ -52,14 +53,21 @@ export const signInWithGoogle = async () => {
  * Catch and return user auth state after redirecting back from Google
  */
 export const checkRedirectResult = async () => {
+  console.log('[Guardian Auth] 🔄 Calling getRedirectResult(auth)...');
   try {
     const result = await getRedirectResult(auth);
     if (result && result.user) {
+      console.log('[Guardian Auth] ✅ getRedirectResult SUCCESS! User acquired from redirect:', {
+        uid: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName
+      });
       return result.user;
     }
+    console.log('[Guardian Auth] ℹ️ getRedirectResult returned null (Normal page load / no pending redirect result)');
     return null;
   } catch (error) {
-    console.error("Google Redirect Result Error:", error);
+    console.error("[Guardian Auth] ❌ getRedirectResult Error:", error);
     throw error;
   }
 };
@@ -68,10 +76,12 @@ export const checkRedirectResult = async () => {
  * Sign out current user
  */
 export const logoutUser = async () => {
+  console.log('[Guardian Auth] 🚪 Logging out current user...');
   try {
     await signOut(auth);
+    console.log('[Guardian Auth] ✅ Sign-Out successful.');
   } catch (error) {
-    console.error("Sign-Out Error:", error);
+    console.error("[Guardian Auth] ❌ Sign-Out Error:", error);
     throw error;
   }
 };
@@ -80,6 +90,7 @@ export const logoutUser = async () => {
  * Subscribe to Firebase Auth state changes
  */
 export const subscribeAuthState = (callback) => {
+  console.log('[Guardian Auth] 📡 Registering onAuthStateChanged listener...');
   return onAuthStateChanged(auth, callback);
 };
 
@@ -89,6 +100,7 @@ export const subscribeAuthState = (callback) => {
  */
 export const subscribeUserContacts = (uid, onUpdate) => {
   if (!uid) return () => {};
+  console.log(`[Guardian Firestore] 📡 Subscribing to contacts for uid: ${uid}`);
   const contactsRef = collection(db, "users", uid, "contacts");
   
   return onSnapshot(contactsRef, (snapshot) => {
@@ -96,9 +108,10 @@ export const subscribeUserContacts = (uid, onUpdate) => {
     snapshot.forEach((docSnap) => {
       contactsList.push({ id: docSnap.id, ...docSnap.data() });
     });
+    console.log(`[Guardian Firestore] 📦 Contacts snapshot received (${contactsList.length} contacts)`);
     onUpdate(contactsList);
   }, (error) => {
-    console.error("Firestore Contacts Subscription Error:", error);
+    console.error("[Guardian Firestore] ❌ Contacts Subscription Error:", error);
   });
 };
 
@@ -107,6 +120,7 @@ export const subscribeUserContacts = (uid, onUpdate) => {
  */
 export const addContactToCloud = async (uid, contact) => {
   if (!uid || !contact?.id) return;
+  console.log(`[Guardian Firestore] ➕ Adding contact "${contact.name}" to Cloud Firestore...`);
   const docRef = doc(db, "users", uid, "contacts", contact.id);
   await setDoc(docRef, contact);
 };
@@ -116,6 +130,7 @@ export const addContactToCloud = async (uid, contact) => {
  */
 export const deleteContactFromCloud = async (uid, contactId) => {
   if (!uid || !contactId) return;
+  console.log(`[Guardian Firestore] 🗑️ Deleting contact "${contactId}" from Cloud Firestore...`);
   const docRef = doc(db, "users", uid, "contacts", contactId);
   await deleteDoc(docRef);
 };
@@ -125,6 +140,7 @@ export const deleteContactFromCloud = async (uid, contactId) => {
  */
 export const updatePrimaryContactInCloud = async (uid, targetContactId, contactsList) => {
   if (!uid || !contactsList) return;
+  console.log(`[Guardian Firestore] ⭐ Updating primary contact to "${targetContactId}"...`);
   for (const c of contactsList) {
     const isPrimary = c.id === targetContactId;
     const docRef = doc(db, "users", uid, "contacts", c.id);

@@ -28,33 +28,49 @@ export default function App() {
   const [alertData, setAlertData] = useState(null);
   const [isSafeArrivalModalOpen, setIsSafeArrivalModalOpen] = useState(false);
 
-  // 1. Check Redirect Result (iOS Safari & Redirect Flow) & Subscribe to Auth State
+  // 1. Firebase Auth State Listener & Redirect Result Check
   useEffect(() => {
     let isMounted = true;
-    setAuthLoading(true);
+    console.log('[Guardian Auth] 🏁 App mounted. Initializing authentication check...');
 
-    // Process Google redirect result when returning to the app
-    checkRedirectResult()
-      .then((redirectUser) => {
+    const initAuth = async () => {
+      setAuthLoading(true);
+
+      // Step A: Await getRedirectResult(auth) BEFORE unlocking authLoading
+      try {
+        console.log('[Guardian Auth] Step A: Awaiting getRedirectResult(auth)...');
+        const redirectUser = await checkRedirectResult();
         if (isMounted && redirectUser) {
+          console.log('[Guardian Auth] Step A Complete: Redirect user acquired! Setting user state:', redirectUser.email);
           setUser(redirectUser);
         }
-      })
-      .catch((err) => {
-        console.error("Redirect Sign-In Processing Error:", err);
+      } catch (err) {
+        console.error('[Guardian Auth] Step A Error: Failed to check redirect result:', err);
+      }
+
+      // Step B: Set up onAuthStateChanged listener
+      console.log('[Guardian Auth] Step B: Subscribing to onAuthStateChanged(auth)...');
+      const unsubscribe = subscribeAuthState((currentUser) => {
+        if (!isMounted) return;
+
+        console.log('[Guardian Auth] 👤 onAuthStateChanged emitted user:', currentUser ? currentUser.email : 'null');
+        setUser(currentUser);
+
+        console.log('[Guardian Auth] ✅ Auth initialization complete. Setting authLoading = false.');
+        setAuthLoading(false);
       });
 
-    // Subscribe to Firebase Auth state
-    const unsubscribe = subscribeAuthState((currentUser) => {
-      if (isMounted) {
-        setUser(currentUser);
-        setAuthLoading(false);
-      }
+      return unsubscribe;
+    };
+
+    let unsubscribeFunc;
+    initAuth().then((unsub) => {
+      unsubscribeFunc = unsub;
     });
 
     return () => {
       isMounted = false;
-      unsubscribe();
+      if (unsubscribeFunc) unsubscribeFunc();
     };
   }, []);
 
