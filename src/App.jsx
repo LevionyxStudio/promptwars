@@ -9,6 +9,7 @@ import SafeArrivalModal from './components/SafeArrivalModal.jsx';
 import { getDeviceLocation } from './services/location.js';
 import { 
   subscribeAuthState, 
+  checkRedirectResult,
   logoutUser, 
   subscribeUserContacts, 
   addContactToCloud, 
@@ -27,13 +28,34 @@ export default function App() {
   const [alertData, setAlertData] = useState(null);
   const [isSafeArrivalModalOpen, setIsSafeArrivalModalOpen] = useState(false);
 
-  // 1. Firebase Auth State Listener
+  // 1. Check Redirect Result (iOS Safari & Redirect Flow) & Subscribe to Auth State
   useEffect(() => {
+    let isMounted = true;
+    setAuthLoading(true);
+
+    // Process Google redirect result when returning to the app
+    checkRedirectResult()
+      .then((redirectUser) => {
+        if (isMounted && redirectUser) {
+          setUser(redirectUser);
+        }
+      })
+      .catch((err) => {
+        console.error("Redirect Sign-In Processing Error:", err);
+      });
+
+    // Subscribe to Firebase Auth state
     const unsubscribe = subscribeAuthState((currentUser) => {
-      setUser(currentUser);
-      setAuthLoading(false);
+      if (isMounted) {
+        setUser(currentUser);
+        setAuthLoading(false);
+      }
     });
-    return () => unsubscribe();
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, []);
 
   // 2. Realtime Firestore Sync for User's Contacts (users/{uid}/contacts)
@@ -109,13 +131,13 @@ export default function App() {
     setAlertData(null);
   };
 
-  // Auth Loading Screen
+  // Auth Loading Screen (prevents flashing sign-in screen when returning from redirect)
   if (authLoading) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center">
         <div className="flex items-center gap-3 text-emerald-400 font-medium">
-          <Loader2 className="w-6 h-6 animate-spin" />
-          <span>Initializing Guardian Security...</span>
+          <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
+          <span>Verifying Security Authentication...</span>
         </div>
       </div>
     );

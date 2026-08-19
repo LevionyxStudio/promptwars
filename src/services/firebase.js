@@ -2,7 +2,8 @@ import { initializeApp } from "firebase/app";
 import { 
   getAuth, 
   GoogleAuthProvider, 
-  signInWithPopup, 
+  signInWithRedirect, 
+  getRedirectResult, 
   signOut, 
   onAuthStateChanged 
 } from "firebase/auth";
@@ -36,14 +37,29 @@ export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: 'select_account' });
 
 /**
- * Sign in user with Google popup
+ * Sign in user with Google via Redirect (iOS Safari & Cross-Platform compatible)
  */
 export const signInWithGoogle = async () => {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
+    await signInWithRedirect(auth, googleProvider);
   } catch (error) {
-    console.error("Google Sign-In Error:", error);
+    console.error("Google Sign-In Redirect Error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Catch and return user auth state after redirecting back from Google
+ */
+export const checkRedirectResult = async () => {
+  try {
+    const result = await getRedirectResult(auth);
+    if (result && result.user) {
+      return result.user;
+    }
+    return null;
+  } catch (error) {
+    console.error("Google Redirect Result Error:", error);
     throw error;
   }
 };
