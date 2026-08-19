@@ -14,7 +14,7 @@ export default function App() {
   const [alertData, setAlertData] = useState(null);
   const [isSafeArrivalModalOpen, setIsSafeArrivalModalOpen] = useState(false);
 
-  // Initialize Contacts from localStorage or pre-seed demo contact
+  // Initialize Contacts from localStorage or pre-seed default contacts
   useEffect(() => {
     const saved = localStorage.getItem('guardian_contacts');
     if (saved) {
@@ -37,6 +37,14 @@ export default function App() {
         email: 'alex@example.com',
         relationship: 'Partner / Spouse',
         isPrimary: true
+      },
+      {
+        id: 'contact_default_2',
+        name: 'Priya Sharma',
+        phone: '+91 9812345678',
+        email: 'priya@example.com',
+        relationship: 'Friend / Family',
+        isPrimary: false
       }
     ];
     setContacts(initial);
@@ -131,6 +139,7 @@ export default function App() {
         {journeyState === 'ACTIVE' && (
           <ActiveJourney
             journeyData={journeyData}
+            contacts={contacts}
             primaryContact={primaryContact}
             onTriggerAlert={handleTriggerAlert}
             onSafeArrival={handleSafeArrival}
@@ -140,6 +149,7 @@ export default function App() {
         {journeyState === 'ALERT' && (
           <AlertScreen
             alertData={alertData}
+            contacts={contacts}
             primaryContact={primaryContact}
             onResetJourney={handleResetJourney}
           />
@@ -147,7 +157,7 @@ export default function App() {
       </main>
 
       <footer className="border-t border-slate-900 py-4 px-4 text-center text-xs text-slate-500">
-        <p>Guardian SafetyNet • Built with React, Vite & Gemini AI • Hackathon Phase 1</p>
+        <p>Guardian SafetyNet • Built with React, Vite & Gemini AI • Phase 2 Intelligent Security</p>
       </footer>
 
       <SafeArrivalModal

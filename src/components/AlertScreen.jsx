@@ -10,11 +10,22 @@ import {
   Navigation,
   ExternalLink,
   Copy,
-  Bug
+  Bug,
+  BrainCircuit,
+  BellRing,
+  Info
 } from 'lucide-react';
 
-export default function AlertScreen({ alertData, primaryContact, onResetJourney }) {
+export default function AlertScreen({ alertData, contacts = [], primaryContact, onResetJourney }) {
   const [copiedLocation, setCopiedLocation] = useState(false);
+
+  const confidence = alertData?.confidence ?? 0.95;
+  const isHighUrgency = confidence >= 0.75 || alertData?.urgencyLevel === 'HIGH';
+
+  // Smart Contact Filter: Medium Confidence notifies ONLY Primary Contact; High Confidence notifies ALL
+  const notifiedContacts = isHighUrgency
+    ? (contacts.length > 0 ? contacts : [primaryContact].filter(Boolean))
+    : [primaryContact || contacts[0]].filter(Boolean);
 
   const location = alertData?.location || {
     latitude: 28.613939,
@@ -30,70 +41,112 @@ export default function AlertScreen({ alertData, primaryContact, onResetJourney 
   const mapsUrl = location.mapsUrl || `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
   const timestamp = new Date().toLocaleTimeString();
 
-  const simulatedSmsMessage = `🚨 GUARDIAN EMERGENCY ALERT: Your trusted contact might be in danger!
-Location: ${location.address}
-Maps Link: ${mapsUrl}
-Distress Reason: ${alertData?.reason || 'No check-in response received.'}
-User Input: "${alertData?.userResponse || 'No Response'}"
-Time: ${timestamp}`;
-
   const copyLocationToClipboard = () => {
     navigator.clipboard.writeText(mapsUrl);
     setCopiedLocation(true);
     setTimeout(() => setCopiedLocation(false), 2000);
   };
 
+  const getSmsMessageForContact = (contact) => {
+    if (isHighUrgency) {
+      return `🚨 GUARDIAN URGENT EMERGENCY ALERT: High distress confidence (${Math.round(confidence * 100)}%)!
+User Input: "${alertData?.userResponse || '[NO RESPONSE]'}"
+AI Reasoning: ${alertData?.reason || 'Distress signal detected.'}
+Location: ${location.address}
+Maps Link: ${mapsUrl}
+Time: ${timestamp}`;
+    } else {
+      return `⚠️ GUARDIAN ADVISORY CHECK-IN: Guardian AI detected subtle hesitation (${Math.round(confidence * 100)}% confidence). Please send a quick text or call to verify they are okay.
+User Input: "${alertData?.userResponse || '[BRIEF RESPONSE]'}"
+AI Reasoning: ${alertData?.reason || 'Subtle behavioral anomaly detected.'}
+Location: ${location.address}
+Maps Link: ${mapsUrl}
+Time: ${timestamp}`;
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto space-y-5 sm:space-y-6 animate-fadeIn px-1 sm:px-0">
       {/* Strobe Emergency Header */}
-      <div className="glass-panel-alert p-4 sm:p-6 rounded-2xl animate-emergency text-center space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[11px] sm:text-xs font-bold uppercase tracking-wider">
-          <AlertTriangle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-400 animate-bounce shrink-0" />
-          <span>DISTRESS DETECTED — ALERT TRANSMITTED</span>
+      <div className={`p-4 sm:p-6 rounded-2xl text-center space-y-2.5 transition-all ${
+        isHighUrgency ? 'glass-panel-alert animate-emergency' : 'glass-panel border-amber-500/50 bg-slate-900/95'
+      }`}>
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold uppercase tracking-wider border"
+          style={{
+            backgroundColor: isHighUrgency ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)',
+            color: isHighUrgency ? '#fca5a5' : '#fcd34d',
+            borderColor: isHighUrgency ? 'rgba(239,68,68,0.4)' : 'rgba(245,158,11,0.4)'
+          }}>
+          <AlertTriangle className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 ${isHighUrgency ? 'animate-bounce text-rose-400' : 'text-amber-400'}`} />
+          <span>
+            {isHighUrgency ? 'HIGH CONFIDENCE (75%+) — URGENT EMERGENCY DISPATCH' : 'MEDIUM CONFIDENCE (50-74%) — ADVISORY CHECK-IN DISPATCH'}
+          </span>
         </div>
-        <h2 className="text-xl sm:text-3xl font-black text-white font-heading tracking-tight glow-text-crimson">
-          Emergency Alert Triggered!
+        <h2 className={`text-xl sm:text-3xl font-black font-heading tracking-tight ${
+          isHighUrgency ? 'text-white glow-text-crimson' : 'text-amber-300 glow-text-amber'
+        }`}>
+          {isHighUrgency ? 'High Distress Emergency Alert!' : 'Advisory Safety Check-In Triggered'}
         </h2>
-        <p className="text-xs sm:text-sm text-rose-200/80 max-w-xl mx-auto font-medium leading-relaxed px-2">
-          Guardian AI detected potential danger during check-in. Automated emergency dispatches have been transmitted to your primary contact.
+        <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto font-medium leading-relaxed px-2">
+          {isHighUrgency
+            ? 'Guardian AI detected high-confidence distress signals. Urgent emergency notifications have been dispatched to ALL trusted contacts.'
+            : 'Guardian AI detected subtle behavioral hesitation. Non-panic advisory check-in dispatched to your primary contact only.'}
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-        {/* Distress Classification Detail Card */}
-        <div className="glass-panel p-4 sm:p-5 border-rose-500/30 bg-slate-900/90 space-y-4">
-          <div className="flex items-center gap-2.5 text-rose-400">
-            <ShieldAlert className="w-5 h-5 shrink-0" />
-            <h3 className="text-sm sm:text-base font-bold text-white font-heading">AI Incident Diagnostics</h3>
+        {/* Deeper Distress AI Diagnostics Card */}
+        <div className="glass-panel p-4 sm:p-5 border-emerald-500/30 bg-slate-900/90 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center gap-2 text-emerald-400">
+              <BrainCircuit className="w-5 h-5 shrink-0" />
+              <h3 className="text-sm sm:text-base font-bold text-white font-heading">Behavioral AI Diagnostics</h3>
+            </div>
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+              PHASE 2 REASONING
+            </span>
           </div>
 
           <div className="space-y-3">
-            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-rose-500/20 space-y-1">
-              <span className="text-[10px] sm:text-[11px] font-bold text-rose-400 uppercase tracking-wider">Trigger Classification</span>
+            {/* Urgency Tier & Confidence Bar */}
+            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-400 font-medium">AI Confidence Score:</span>
+                <span className={`font-mono font-extrabold ${isHighUrgency ? 'text-rose-400' : 'text-amber-400'}`}>
+                  {Math.round(confidence * 100)}% ({isHighUrgency ? 'HIGH TIER' : 'MEDIUM TIER'})
+                </span>
+              </div>
+              <div className="w-full h-2 rounded-full bg-slate-800 overflow-hidden">
+                <div 
+                  className={`h-full rounded-full transition-all duration-1000 ${
+                    isHighUrgency ? 'bg-gradient-to-r from-amber-500 to-rose-500' : 'bg-gradient-to-r from-teal-500 to-amber-400'
+                  }`}
+                  style={{ width: `${Math.round(confidence * 100)}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* AI Behavioral Reasoning Explanation */}
+            <div className="p-3.5 rounded-xl bg-slate-950/80 border border-emerald-500/20 space-y-1">
+              <span className="text-[10px] sm:text-[11px] font-bold text-emerald-400 uppercase tracking-wider">AI Behavioral Reasoning</span>
               <p className="text-xs text-slate-200 font-medium leading-relaxed">
-                {alertData?.reason || 'Distress sentiment recognized'}
+                "{alertData?.reason || 'Behavioral anomaly detected'}"
               </p>
             </div>
 
+            {/* Captured User Response */}
             <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 space-y-1">
               <span className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider">User Response Captured</span>
               <p className="text-xs font-mono text-amber-300 italic break-words">
                 "{alertData?.userResponse || '[NO RESPONSE]'}"
               </p>
             </div>
-
-            <div className="flex items-center justify-between text-xs p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-              <span className="text-slate-400">AI Confidence:</span>
-              <span className="font-mono text-emerald-400 font-bold">
-                {Math.round((alertData?.confidence || 0.95) * 100)}%
-              </span>
-            </div>
           </div>
         </div>
 
         {/* Real Location & Dispatch Context Card */}
         <div className="glass-panel p-4 sm:p-5 border-slate-800 bg-slate-900/90 space-y-4">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2 text-emerald-400">
               <MapPin className="w-5 h-5 shrink-0" />
               <h3 className="text-sm sm:text-base font-bold text-white font-heading truncate">Live Dispatch Location</h3>
@@ -127,11 +180,6 @@ Time: ${timestamp}`;
                   <span>Geolocation Diagnostics:</span>
                 </div>
                 <p className="text-[11px] leading-tight break-words">Reason: {location.fallbackNote}</p>
-                {location.rawError && (
-                  <p className="text-[10px] text-amber-200/90 font-mono bg-slate-950/80 p-1.5 rounded border border-amber-500/20 mt-1 break-words">
-                    Raw Error: Code {location.rawError.code} ({location.rawError.codeName}) — "{location.rawError.message}"
-                  </p>
-                )}
               </div>
             )}
 
@@ -158,27 +206,90 @@ Time: ${timestamp}`;
         </div>
       </div>
 
-      {/* Simulated Trusted Contact Phone Screen Preview */}
+      {/* Smart Alert Prioritization Contacts List */}
       <div className="glass-panel p-4 sm:p-6 border-slate-800 bg-slate-900/95 space-y-4">
         <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-2">
-          <div className="flex items-center gap-2 text-slate-200 min-w-0">
-            <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400 shrink-0" />
-            <h3 className="text-xs sm:text-base font-bold text-white font-heading truncate">
-              Simulated SMS Sent to {primaryContact?.name || 'Trusted Contact'}
+          <div className="flex items-center gap-2 text-slate-200">
+            <BellRing className="w-5 h-5 text-emerald-400" />
+            <h3 className="text-sm sm:text-base font-bold text-white font-heading">
+              Smart Alert Contact Prioritization
+            </h3>
+          </div>
+          <span className="text-[11px] font-mono font-semibold text-amber-300 bg-amber-500/10 px-2.5 py-1 rounded border border-amber-500/20">
+            {isHighUrgency ? `HIGH URGENCY: ALL ${notifiedContacts.length} CONTACTS DISPATCHED` : `MEDIUM URGENCY: PRIMARY ONLY (1/${contacts.length || 1})`}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {(contacts.length > 0 ? contacts : [primaryContact].filter(Boolean)).map((contact) => {
+            const isNotified = notifiedContacts.some(c => c.id === contact.id);
+            return (
+              <div 
+                key={contact.id}
+                className={`p-3.5 rounded-xl border transition-all ${
+                  isNotified
+                    ? (isHighUrgency ? 'bg-rose-500/10 border-rose-500/40' : 'bg-amber-500/10 border-amber-500/40')
+                    : 'bg-slate-950/40 border-slate-800 opacity-60'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="text-xs font-bold text-white truncate">{contact.name}</span>
+                  <span className={`text-[9px] font-bold font-mono px-2 py-0.5 rounded border shrink-0 ${
+                    isNotified
+                      ? (isHighUrgency ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-amber-500/20 text-amber-300 border-amber-500/40')
+                      : 'bg-slate-800 text-slate-400 border-slate-700'
+                  }`}>
+                    {isNotified ? (isHighUrgency ? 'URGENT DISPATCH' : 'ADVISORY CHECK-IN') : 'STANDBY'}
+                  </span>
+                </div>
+                <p className="text-[11px] font-mono text-slate-400 truncate">{contact.phone || contact.email}</p>
+                <p className="text-[10px] text-slate-500 mt-1 italic">
+                  {isNotified
+                    ? (isHighUrgency ? 'Full emergency SMS transmitted' : 'Check-on-them advisory SMS transmitted')
+                    : 'Standby mode (not notified at medium confidence)'}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Simulated Trusted Contact Phone Screen Preview Cards */}
+      <div className="glass-panel p-4 sm:p-6 border-slate-800 bg-slate-900/95 space-y-4">
+        <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 gap-2">
+          <div className="flex items-center gap-2 text-slate-200">
+            <MessageSquare className="w-5 h-5 text-emerald-400" />
+            <h3 className="text-sm sm:text-base font-bold text-white font-heading">
+              Simulated Emergency SMS Dispatch Previews
             </h3>
           </div>
           <span className="text-[10px] sm:text-xs text-slate-400 font-mono">{timestamp}</span>
         </div>
 
-        {/* SMS Bubble */}
-        <div className="max-w-lg mx-auto p-3.5 sm:p-4 rounded-2xl bg-slate-950 border border-rose-500/30 font-mono text-[11px] sm:text-xs text-rose-200 space-y-2 leading-relaxed break-words">
-          <div className="flex flex-wrap items-center justify-between text-rose-400 border-b border-rose-500/20 pb-1.5 font-sans font-bold gap-1">
-            <span className="flex items-center gap-1 truncate max-w-[220px] sm:max-w-none">
-              <User className="w-3.5 h-3.5 shrink-0" /> TO: {primaryContact?.name}
-            </span>
-            <span className="text-[9px] bg-rose-500/20 px-1.5 py-0.5 rounded shrink-0">DELIVERED</span>
-          </div>
-          <p className="whitespace-pre-wrap leading-relaxed">{simulatedSmsMessage}</p>
+        <div className="space-y-3">
+          {notifiedContacts.map((contact) => (
+            <div 
+              key={contact.id}
+              className={`p-3.5 sm:p-4 rounded-2xl bg-slate-950 border font-mono text-[11px] sm:text-xs space-y-2 leading-relaxed break-words ${
+                isHighUrgency ? 'border-rose-500/30 text-rose-200' : 'border-amber-500/30 text-amber-200'
+              }`}
+            >
+              <div className="flex flex-wrap items-center justify-between border-b pb-1.5 font-sans font-bold gap-1"
+                style={{ borderColor: isHighUrgency ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)' }}>
+                <span className="flex items-center gap-1 truncate max-w-[220px] sm:max-w-none">
+                  <User className="w-3.5 h-3.5 shrink-0" /> TO: {contact.name} ({contact.phone || contact.email})
+                </span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded shrink-0 font-mono uppercase"
+                  style={{
+                    backgroundColor: isHighUrgency ? 'rgba(239,68,68,0.2)' : 'rgba(245,158,11,0.2)',
+                    color: isHighUrgency ? '#fca5a5' : '#fcd34d'
+                  }}>
+                  {isHighUrgency ? 'DELIVERED (URGENT)' : 'DELIVERED (ADVISORY)'}
+                </span>
+              </div>
+              <p className="whitespace-pre-wrap leading-relaxed">{getSmsMessageForContact(contact)}</p>
+            </div>
+          ))}
         </div>
       </div>
 

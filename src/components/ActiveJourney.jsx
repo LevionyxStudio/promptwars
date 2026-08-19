@@ -18,6 +18,7 @@ import { getDeviceLocation } from '../services/location.js';
 
 export default function ActiveJourney({ 
   journeyData, 
+  contacts = [],
   primaryContact, 
   onTriggerAlert, 
   onSafeArrival 
@@ -119,6 +120,7 @@ export default function ActiveJourney({
         reason: classification.reasoning,
         userResponse: textToSubmit || '(No Response / Ambiguous)',
         confidence: classification.confidence,
+        urgencyLevel: classification.urgencyLevel || (classification.confidence >= 0.75 ? 'HIGH' : 'MEDIUM'),
         location: currentLocation
       });
     } else {
@@ -142,6 +144,7 @@ export default function ActiveJourney({
       reason: 'No response received within safety check-in countdown limit (15s timeout expired)',
       userResponse: '[NO RESPONSE - TIMEOUT EXPIRED]',
       confidence: 1.0,
+      urgencyLevel: 'HIGH',
       location: currentLocation
     });
   };
@@ -158,6 +161,7 @@ export default function ActiveJourney({
       reason: 'Manual SOS Emergency Trigger activated by user',
       userResponse: '[MANUAL SOS BUTTON PRESS]',
       confidence: 1.0,
+      urgencyLevel: 'HIGH',
       location: loc
     });
   };
@@ -184,7 +188,7 @@ export default function ActiveJourney({
               <MapPin className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
               <span className="truncate max-w-[120px] sm:max-w-none">{journeyData?.destination || 'Walking Home'}</span>
               <span className="text-slate-600 hidden sm:inline">•</span>
-              <span className="text-slate-400 truncate max-w-[120px] sm:max-w-none">Dispatch: {primaryContact?.name}</span>
+              <span className="text-slate-400 truncate max-w-[120px] sm:max-w-none">Primary: {primaryContact?.name}</span>
             </p>
           </div>
         </div>
@@ -206,7 +210,7 @@ export default function ActiveJourney({
             <p className="text-[11px] sm:text-xs text-slate-500">Guardian will verify your safety automatically</p>
           </div>
 
-          {/* Countdown Ring (Scales down proportionally on mobile viewports: w-36 h-36 sm:w-44 sm:h-44) */}
+          {/* Countdown Ring */}
           <div className="relative w-36 h-36 sm:w-44 sm:h-44 mx-auto flex items-center justify-center">
             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
               <circle
@@ -287,7 +291,7 @@ export default function ActiveJourney({
               </div>
               <div>
                 <h4 className="text-sm sm:text-base font-bold text-white font-heading">AI Safety Check-In</h4>
-                <p className="text-[11px] text-slate-400">Powered by Gemini AI</p>
+                <p className="text-[11px] text-slate-400">Gemini Behavioral Analysis Active</p>
               </div>
             </div>
 
@@ -348,29 +352,51 @@ export default function ActiveJourney({
               </button>
             </div>
 
-            {/* Quick Action Preset Buttons */}
-            <div className="flex flex-wrap gap-2 pt-1">
-              <button
-                onClick={() => handleResponseSubmit("I'm safe, almost home!")}
-                disabled={isClassifying}
-                className="min-h-[40px] px-3 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition-all active:scale-95 text-left"
-              >
-                👍 "I'm safe, almost home!"
-              </button>
-              <button
-                onClick={() => handleResponseSubmit("All good, just walking")}
-                disabled={isClassifying}
-                className="min-h-[40px] px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold transition-all active:scale-95 text-left"
-              >
-                👌 "All good, just walking"
-              </button>
-              <button
-                onClick={() => handleResponseSubmit("Someone is following me, I feel unsafe")}
-                disabled={isClassifying}
-                className="min-h-[40px] px-3 py-2 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-semibold transition-all active:scale-95 text-left"
-              >
-                ⚠️ "Someone is following me!" (Test Distress)
-              </button>
+            {/* Quick Action Test Presets for Phase 2 Behavioral Signals */}
+            <div className="space-y-2 pt-1">
+              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Phase 2 Behavioral Distress Presets (Click to Test):
+              </span>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleResponseSubmit("I'm safe, almost home!")}
+                  disabled={isClassifying}
+                  className="min-h-[38px] px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-medium transition-all active:scale-95"
+                >
+                  👍 Safe Confirmation
+                </button>
+                <button
+                  onClick={() => handleResponseSubmit("fine")}
+                  disabled={isClassifying}
+                  className="min-h-[38px] px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-medium transition-all active:scale-95"
+                  title="Tests unusual brevity under check-in pressure"
+                >
+                  🔍 "fine" (Subtle Brevity)
+                </button>
+                <button
+                  onClick={() => handleResponseSubmit("why are you asking?")}
+                  disabled={isClassifying}
+                  className="min-h-[38px] px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-medium transition-all active:scale-95"
+                  title="Tests hesitation / deflection avoiding safety confirmation"
+                >
+                  🔍 "why are you asking?" (Deflection)
+                </button>
+                <button
+                  onClick={() => handleResponseSubmit("everything is totally fine do not worry")}
+                  disabled={isClassifying}
+                  className="min-h-[38px] px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-medium transition-all active:scale-95"
+                  title="Tests forced-calm / overly reassuring phrasing"
+                >
+                  🔍 "totally fine don't worry" (Forced-Calm)
+                </button>
+                <button
+                  onClick={() => handleResponseSubmit("Someone is following me, I feel unsafe!")}
+                  disabled={isClassifying}
+                  className="min-h-[38px] px-3 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-semibold transition-all active:scale-95"
+                >
+                  🚨 "Someone is following me!" (High Threat)
+                </button>
+              </div>
             </div>
           </div>
         </div>

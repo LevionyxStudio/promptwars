@@ -1,7 +1,7 @@
 /**
  * Guardian Gemini AI Frontend Service
  * Calls the Vercel Serverless Function /api/gemini securely.
- * Includes local fallback intent heuristics if the endpoint is unavailable.
+ * Includes local behavioral fallback intent heuristics if the endpoint is unavailable.
  */
 
 /**
@@ -35,18 +35,19 @@ export const generateCheckInPrompt = async ({
 };
 
 /**
- * Classify user response into SAFE or DISTRESS via /api/gemini serverless function.
- * Falls back to local sentiment heuristics if API is unavailable.
+ * Classify user response into SAFE or DISTRESS with behavioral reasoning & confidence score.
+ * Calls /api/gemini serverless function or falls back to local behavioral heuristics.
  */
 export const classifyUserResponse = async ({ userResponse = '', promptText = '' }) => {
   const trimmed = userResponse.trim();
 
-  // Non-response or expired countdown is classified as automatic distress
+  // Non-response or expired countdown is classified as automatic high distress
   if (!trimmed) {
     return {
       status: 'DISTRESS',
-      reasoning: 'No response received within safety timeout limit',
+      reasoning: 'No response received within safety check-in countdown limit (15s timeout expired)',
       confidence: 1.0,
+      urgencyLevel: 'HIGH',
       keywordTriggered: 'TIMEOUT'
     };
   }
@@ -68,10 +69,20 @@ export const classifyUserResponse = async ({ userResponse = '', promptText = '' 
     }
 
     const parsed = await response.json();
+    const isDistress = parsed.status?.toUpperCase() === 'DISTRESS';
+    const confidence = typeof parsed.confidence === 'number' ? parsed.confidence : (isDistress ? 0.85 : 0.95);
+
+    let urgencyLevel = parsed.urgencyLevel?.toUpperCase();
+    if (!urgencyLevel) {
+      if (!isDistress) urgencyLevel = 'LOW';
+      else urgencyLevel = confidence >= 0.75 ? 'HIGH' : 'MEDIUM';
+    }
+
     return {
-      status: parsed.status?.toUpperCase() === 'DISTRESS' ? 'DISTRESS' : 'SAFE',
+      status: isDistress ? 'DISTRESS' : 'SAFE',
       reasoning: parsed.reasoning || localClassification.reasoning,
-      confidence: parsed.confidence || 0.95
+      confidence: Math.min(1.0, Math.max(0.0, confidence)),
+      urgencyLevel: urgencyLevel
     };
   } catch {
     return localClassification;
@@ -79,39 +90,85 @@ export const classifyUserResponse = async ({ userResponse = '', promptText = '' 
 };
 
 /**
- * Local fallback heuristics for robust offline/no-key intent evaluation
+ * Local fallback heuristics for robust offline behavioral & intent evaluation
  */
 const evaluateLocalHeuristics = (text) => {
-  const lower = text.toLowerCase();
-  const distressKeywords = [
+  const lower = text.toLowerCase().trim();
+
+  // 1. Explicit Danger/Threat Keywords (High Urgency)
+  const highDistressKeywords = [
     'help', 'scared', 'follow', 'following', 'behind', 'creep', 'creepy',
-    'stalker', 'run', 'running', 'danger', '911', 'police', 'stop', 'shadow',
-    'hiding', 'grabbed', 'knife', 'gun', 'threat', 'unsafe', 'not good',
-    'scary', 'someone', 'code red', 'sos', 'watch out'
+    'stalker', 'run', 'running', 'danger', '112', '911', 'police', 'stop', 'shadow',
+    'hiding', 'grabbed', 'knife', 'gun', 'threat', 'unsafe', 'scary', 'someone',
+    'code red', 'sos', 'watch out', 'attack'
   ];
 
-  const matched = distressKeywords.find(word => lower.includes(word));
-  if (matched) {
+  const highMatch = highDistressKeywords.find(word => lower.includes(word));
+  if (highMatch) {
     return {
       status: 'DISTRESS',
-      reasoning: `Distress indicator detected in response (matched word: "${matched}")`,
-      confidence: 0.98,
-      keywordTriggered: matched
+      reasoning: `High distress signal recognized: Response explicitly mentions fear or threat indicator ("${highMatch}").`,
+      confidence: 0.95,
+      urgencyLevel: 'HIGH',
+      keywordTriggered: highMatch
     };
   }
 
-  if (['no', 'not safe', 'bad', 'send help', 'sos'].includes(lower)) {
+  // 2. Contradiction (combines safe words with suspicious context)
+  if ((lower.includes('fine') || lower.includes('good')) && (lower.includes('close') || lower.includes('fast') || lower.includes('man') || lower.includes('guy') || lower.includes('behind'))) {
     return {
       status: 'DISTRESS',
-      reasoning: 'Explicit negative response received during safety check-in',
-      confidence: 0.99
+      reasoning: 'Behavioral contradiction detected: User claims safety while describing concerning surrounding environment.',
+      confidence: 0.82,
+      urgencyLevel: 'HIGH'
     };
   }
 
+  // 3. Forced-Calm / Overly Reassuring Phrases (Medium Urgency)
+  const forcedCalmPhrases = [
+    'totally fine', 'nothing wrong', 'trust me', 'don\'t ask', 'don\'t worry',
+    'everything is fine', 'all good stop asking', 'no need to check'
+  ];
+  if (forcedCalmPhrases.some(phrase => lower.includes(phrase))) {
+    return {
+      status: 'DISTRESS',
+      reasoning: 'Behavioral anomaly detected: Forced-calm or overly reassuring phrasing inconsistent with natural check-in behavior.',
+      confidence: 0.68,
+      urgencyLevel: 'MEDIUM'
+    };
+  }
+
+  // 4. Hesitation / Deflection / Non-Answers (Medium Urgency)
+  const hesitationKeywords = [
+    'why', 'who is this', 'what time', 'huh', 'umm', 'wait', 'idk', 'dunno',
+    'what do you mean', 'why ask', 'leave me'
+  ];
+  if (hesitationKeywords.some(word => lower.includes(word))) {
+    return {
+      status: 'DISTRESS',
+      reasoning: 'Behavioral anomaly detected: Hesitation or non-answer deflecting safety confirmation.',
+      confidence: 0.65,
+      urgencyLevel: 'MEDIUM'
+    };
+  }
+
+  // 5. Unusual Brevity under pressure (single character or 1-word text e.g. "fine", "k", "ok", ".")
+  const words = lower.split(/\s+/).filter(Boolean);
+  if (words.length === 1 && (['fine', 'k', 'ok', '.', 'shh', 'busy'].includes(lower) || lower.length <= 2)) {
+    return {
+      status: 'DISTRESS',
+      reasoning: `Behavioral anomaly detected: Unusual single-word brevity ("${lower}") under check-in pressure.`,
+      confidence: 0.62,
+      urgencyLevel: 'MEDIUM'
+    };
+  }
+
+  // 6. Natural Safe Response
   return {
     status: 'SAFE',
-    reasoning: 'Response indicates normal journey progress with no safety threats detected',
-    confidence: 0.92
+    reasoning: 'Response indicates normal journey progress with uncoerced safety confirmation.',
+    confidence: 0.95,
+    urgencyLevel: 'LOW'
   };
 };
 

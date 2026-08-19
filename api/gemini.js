@@ -62,24 +62,30 @@ Generate a brief, warm, natural check-in message (1 to 2 sentences max) asking i
 
     if (action === 'classify') {
       const { userResponse = '', promptText = '' } = payload || {};
-      const systemInstruction = `You are a specialized crisis sentiment analyzer for personal safety.
+
+      const systemInstruction = `You are a specialized behavioral & crisis sentiment analyzer for personal safety monitoring during late-night walks.
 Analyze the user's response to a safety check-in prompt.
-Determine if the user is SAFE or in DISTRESS.
+Reason deeply about genuine behavioral and psychological signals — do NOT rely solely on simple keyword matching.
+
+Evaluate for the following subtle behavioral distress signals:
+1. UNUSUAL BREVITY or single-character/one-word answers under pressure (e.g. "k", "fine", "ok", ".", "shh", "wait")
+2. FORCED-CALM or OVERLY REASSURING language that feels artificial, unnatural, or forced (e.g. "everything is totally 100% fine do not worry", "nothing wrong at all trust me", "all great don't ask")
+3. HESITATION, DEFLECTION, or NON-ANSWERS avoiding safety confirmation (e.g. "why are you asking?", "what time is it?", "who is this?", "umm...", "wait a second", "never mind")
+4. CONTRADICTIONS (e.g. "I'm fine but someone is walking really close behind me", "all good just running fast", "safe but scared")
+5. EXPLICIT DANGER or fear: "help", "following me", "stalker", "scared", "someone is behind me", "danger", "call police", "run", "shadow"
 
 Return ONLY a valid JSON object formatted exactly like this:
 {
   "status": "SAFE" or "DISTRESS",
-  "reasoning": "Brief 1-sentence explanation of why",
-  "confidence": 0.0 to 1.0
+  "confidence": float between 0.00 and 1.00,
+  "reasoning": "A short, insightful 1-2 sentence human-readable behavioral explanation of why you classified it this way.",
+  "urgencyLevel": "LOW" (for SAFE) or "MEDIUM" (subtle/hesitant distress, confidence 0.50-0.74) or "HIGH" (urgent/explicit distress, confidence >= 0.75)
 }
 
-Classify as DISTRESS if:
-- Explicit words of danger/fear: "help", "following me", "stalker", "scared", "someone is behind me", "stop", "danger", "call police", "run", "shadow", "creepy"
-- Subdued/forced panic signals or standard distress codes (e.g. "code red", "bad", "no", "not safe", "hiding")
-- Hesitant, ambiguous distress, or expressing discomfort
-
-Classify as SAFE if:
-- Standard positive/neutral updates: "I'm fine", "All good", "Just turning onto my street", "Home soon", "Safe", "Everything is okay"`;
+SCORING RULES FOR DISTRESS:
+- For subtle hesitation, one-word brevity, or forced-calm responses: set status = "DISTRESS", confidence = 0.50 - 0.74, urgencyLevel = "MEDIUM".
+- For explicit threat, clear fear, or contradiction with danger: set status = "DISTRESS", confidence = 0.75 - 1.00, urgencyLevel = "HIGH".
+- For clear, natural, uncoerced confirmation of safety: set status = "SAFE", confidence = 0.90 - 1.00, urgencyLevel = "LOW".`;
 
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
@@ -96,7 +102,7 @@ Classify as SAFE if:
             generationConfig: {
               responseMimeType: 'application/json',
               temperature: 0.1,
-              maxOutputTokens: 150
+              maxOutputTokens: 200
             }
           })
         }
